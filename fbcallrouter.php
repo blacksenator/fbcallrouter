@@ -1,25 +1,25 @@
 <?php
 
-/* Spamkiller
+/* fbcallrouter is a spam killer
  *
  * Author: BlackSenator
  * https://github.com/BlackSenator
  * Status: draft
- * 
+ *
  * This script is an extension for call routing to/from FRITZ!Box
  * Dependency: callmonitor (port 1012) is open - dial #96*5* to open it
- * 
+ *
  * The programm is listen to the callmonitor.
  * For an incoming call, it is checked whether the number is already known in the telephone book.
  * If not, it is checked at tellows if this unknown number has received a bad score (> 5) and more than 3 comments.
  * If this is the case, the number will be transferred to the corresponding phonebook for future rejections.
  */
 
- 
+
 $config = [
     'url'          => '192.168.178.1',    // your Fritz!Box IP
     'user'         => 'dslf_config',      // your Fritz!Box user
-    'password'     => 'XXXXXXXX',         // your Fritz!Box user password
+    'password'     => 'xxxxxxxx',         // your Fritz!Box user password
     'getPhonebook' => 0,                  // phonebook in which you want to check if this number is already known (first = 0!)
     'setPhonebook' => 2,                  // phonebook in which the spam number should be recorded
     'caller'       => 'autom. gesperrt',  // alias for new caller
@@ -30,7 +30,7 @@ $config = [
 # connect to fritzbox callmonitor port (in a case of error dial #96*5* to open it)
 $fbSocket = stream_socket_client($config['url'] . ":1012", $errno, $errstr);
 if (!$fbSocket) {
-    echo "$errstr ($errno)<br />\n";
+    echo "$errstr ($errno)" . PHP_EOL;
     exit;
     }
 
@@ -47,8 +47,12 @@ $phoneBook->asXML();
 
 // extract just all numbers from the phonebook for a quicker search later on
 $currentNumbers = getNumbers($phoneBook);
+if (count($currentNumbers) == 0) {
+    echo 'The phone book against which you want to check is empty!' . PHP_EOL;
+}
 
 // now listen to the callmonitor and wait for new lines
+echo 'Cocked and rotated...' . PHP_EOL;
 while(true) {
     $newLine = fgets($fbSocket);
     if($newLine != null) {
@@ -110,19 +114,30 @@ while(true) {
     }
 
     /**
-     * delivers an simple array of all numbers from a designated phone book
+     * delivers an simple array of numbers from a designated phone book
      *
      * @param   xml    $fbphonebook  downloaded phone book
-     * @return  array                all phone numbers
+     * @param   array  $types        phonetypes (e.g. home, work, mobil, fax, fax_work)
+     * @return  array                phone numbers
      */
 
-    function getNumbers ($fbPhonebook) {
-
+    function getNumbers ($fbPhonebook, $types = array()) {
+        
         foreach ($fbPhonebook->phonebook->contact as $contact) {
             foreach ($contact->telephony->number as $number) {
-                $number = $number[0]->__toString();
                 if((substr($number, 0, 1) == '*') || (substr($number, 0, 1) == '#')) {
                     continue;
+                }
+                if (isset($types[0])) {
+                    if(in_array($number['type'], $types)) {
+                        $number = $number[0]->__toString();
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else {
+                    $number = $number[0]->__toString();
                 }
                 $numbers[] = $number;
             }
@@ -171,17 +186,23 @@ while(true) {
     /**
      * delivers the tellows score if it is above 5 (neutral) and got more than 3 comments
      *
-     * @param   string $number  phone number
-     * @return                  score
+     * @param   string $number    phone number
+     * @param   int    $comments  must be three or higher (everything else makes no sense)
+     * @return                    score
      */
 
-    function getRating ($number) {
+    function getRating ($number, $comments = 3) {
 
         $score = 5;
+        if ($comments < 3) {
+            $comments = 3;
+        }
         $rating = @simplexml_load_file("http://www.tellows.de/basic/num/$number?xml=1&partner=test&apikey=test123");
-        $rating->asXML ();
-        if ($rating->score > 5 || $rating->comments > 3) {
-            $score = $rating->score;
+        if ($rating != false) {
+            $rating->asXML ();
+            if ($rating->score > 5 || $rating->comments >= $comments) {
+                $score = $rating->score;
+            }
         }
         return $score;
     }
