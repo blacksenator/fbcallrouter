@@ -23,14 +23,22 @@ edit `fbcallrouter.php`  and save it:
 
 ## Usage
 
-Test:
+### Test:
 
     php fbcallrouter.php
 
-Background processing:
+### Permanent background processing:
 
-    php fbcallrouter.php &
+Copy `fbcallrouter.service` to `/etc/systemd/system`
 
+Enable service unit:
+
+    sudo systemctl enable fbcallrouter.service
+
+Check status:
+
+    sudo systemctl enable fbcallrouter.service
+    
 ## License
 This script is released under MIT license.
 
