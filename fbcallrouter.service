@@ -1,0 +1,15 @@
+[Unit]
+Description=FRITZ!Box call router
+After=network.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+WorkingDirectory=/fbcallrouter/
+ExecStart=/usr/bin/env php /fbcallrouter/fbcallrouter.php
+User=volumio
+
+[Install]
+WantedBy=multi-user.target
