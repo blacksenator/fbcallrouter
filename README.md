@@ -12,12 +12,16 @@ If this is the case, the number will be transferred to the corresponding phonebo
 
 ## Installation
 
-Install requirements
+Install requirements are:
 
     git clone https://github.com/BlackSenator/fbcallrouter.git
     cd fbcallrouter
 
-edit `fbcallrouter.php`  and save it:
+Edit the `['config']` section in `fbcallrouter.php` and save it:
+
+    sudo nano fbcallrouter.php 
+
+The least essential adaptation is setting your FRITZ!Box password:
 
     'password'     => 'xxxxxxxx',         // your Fritz!Box user password
 
@@ -29,15 +33,15 @@ edit `fbcallrouter.php`  and save it:
 
 ### Permanent background processing:
 
-Copy `fbcallrouter.service` to `/etc/systemd/system`
+a) copy the file `fbcallrouter.service` into `/etc/systemd/system`
 
-Enable service unit:
-
-    sudo systemctl enable fbcallrouter.service
-
-Check status:
+b) enable the service unit:
 
     sudo systemctl enable fbcallrouter.service
+
+c) check the status:
+
+    sudo systemctl status fbcallrouter.service
     
 ## License
 This script is released under MIT license.
