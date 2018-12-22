@@ -21,6 +21,7 @@ $config = [
     'user'         => 'dslf_config',      // your Fritz!Box user
     'password'     => 'xxxxxxxx',         // your Fritz!Box user password
     'getPhonebook' => 0,                  // phonebook in which you want to check if this number is already known (first = 0!)
+    'refresh'      => 1,                  // after how many days the phonebook should be read again
     'setPhonebook' => 2,                  // phonebook in which the spam number should be recorded
     'caller'       => 'autom. gesperrt',  // alias for new caller
     'type'         => 'default',          // type of phone line (home, work, mobil, fax etc.)
@@ -40,16 +41,15 @@ $contactClient = getClient ($config['url'], 'x_contact', 'X_AVM-DE_OnTel:1', $co
 // get SOAP client for dial operations
 $phoneClient = getClient ($config['url'], 'x_voip', 'X_VoIP:1', $config['user'], $config['password']);
 
-// load current phonebook
-$result = $contactClient->GetPhonebook(new SoapParam($config['getPhonebook'], 'NewPhonebookID'));
-$phoneBook = @simplexml_load_file($result['NewPhonebookURL']);
-$phoneBook->asXML();
+// initial load current phonebook
+$phoneBook = getFBPhonebook($contactClient, $config['getPhonebook']);
 
 // extract just all numbers from the phonebook for a quicker search later on
 $currentNumbers = getNumbers($phoneBook);
 if (count($currentNumbers) == 0) {
     echo 'The phone book against which you want to check is empty!' . PHP_EOL;
 }
+$lastupdate = time();
 
 // now listen to the callmonitor and wait for new lines
 echo 'Cocked and rotated...' . PHP_EOL;
@@ -80,9 +80,18 @@ while(true) {
                 }
             }
         }
-    }
+    }  
     else {
         sleep(1);
+    }
+    $currentTime = time ();
+    if ($currentTime > ($lastupdate + ($config['refresh'] * 864000))) {
+        $phoneBook = getFBPhonebook($contactClient, $config['getPhonebook']);
+        $currentNumbers = getNumbers($phoneBook);
+        if (count($currentNumbers) == 0) {
+            echo 'The phone book against which you want to check is empty!' . PHP_EOL;
+        }
+        $lastupdate = time();
     }
 }
 
@@ -114,6 +123,22 @@ while(true) {
     }
 
     /**
+     * downloads a phonebook from FRITZ!Box
+     *
+     * @param   $client           SOAP client
+     * @param   $phonebookID      ID number of FRITZ!Box phone book
+     * @return                    phonebook
+     */
+
+    function getFBPhonebook ($client, $phonebookID) {
+
+        $result = $client->GetPhonebook(new SoapParam($phonebookID, 'NewPhonebookID'));
+        $phoneBook = @simplexml_load_file($result['NewPhonebookURL']);
+        $phoneBook->asXML();
+        return $phoneBook;
+    }
+
+    /**
      * delivers an simple array of numbers from a designated phone book
      *
      * @param   xml    $fbphonebook  downloaded phone book
@@ -122,7 +147,7 @@ while(true) {
      */
 
     function getNumbers ($fbPhonebook, $types = array()) {
-        
+
         foreach ($fbPhonebook->phonebook->contact as $contact) {
             foreach ($contact->telephony->number as $number) {
                 if((substr($number, 0, 1) == '*') || (substr($number, 0, 1) == '#')) {
