@@ -225,7 +225,7 @@ while(true) {
         $rating = @simplexml_load_file("http://www.tellows.de/basic/num/$number?xml=1&partner=test&apikey=test123");
         if ($rating != false) {
             $rating->asXML ();
-            if ($rating->score > 5 || $rating->comments >= $comments) {
+            if ($rating->score > 5 & $rating->comments >= $comments) {
                 $score = $rating->score;
             }
         }
