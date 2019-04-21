@@ -19,7 +19,7 @@ Install requirements are:
 
 Edit the `['config']` section in `fbcallrouter.php` and save it:
 
-    sudo nano fbcallrouter.php 
+    sudo nano fbcallrouter.php
 
 The least essential adaptation is setting your FRITZ!Box password:
 
@@ -42,9 +42,9 @@ b) enable the service unit:
 c) check the status:
 
     sudo systemctl status fbcallrouter.service
-    
+
 ## License
 This script is released under MIT license.
 
 ## Author
-Copyright (c) 2018 Volker Püschel
+Copyright (c) 2019 Volker Püschel
