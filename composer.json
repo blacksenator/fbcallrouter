@@ -1,0 +1,19 @@
+{
+    "name": "BlackSenator/fbcallrouter",
+    "type": "project",
+    "license": "MIT",
+    "description": "",
+    "authors": [
+        {
+            "name": "BlackSenator",
+            "email": "knuffy@anasco.de"
+        }
+    ],
+    "require": {
+        "php": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+        }
+    }
+}
