@@ -1,0 +1,37 @@
+sudo: false
+
+language: php
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+install:
+  - composer install
+
+matrix:
+  fast_finish: true
+
+jobs:
+  include:
+    - stage: Test
+      php: 7.1
+      script:
+        phpunit
+    - stage: Static Analysis
+      php: 7.1
+      install:
+        - rm -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini
+        - composer require --dev "phpstan/phpstan"
+      script:
+        # Static analyzer check
+        - ./vendor/bin/phpstan analyze --level=5 --no-progress src
+    - stage: Code Style
+      php: 7.1
+      install:
+        - rm -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini
+        - composer require --dev "friendsofphp/php-cs-fixer:^2.8"
+      script:
+        # Check the code style
+        - IFS=$'\n'; COMMIT_SCA_FILES=($(git diff --name-only --diff-filter=ACMRTUXB "${TRAVIS_COMMIT_RANGE}")); unset IFS
+        - ./vendor/bin/php-cs-fixer fix --config=.php_cs.php -v --dry-run --diff --stop-on-violation --using-cache=no --path-mode=intersection -- "${COMMIT_SCA_FILES[@]}"
