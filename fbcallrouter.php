@@ -1,5 +1,7 @@
 <?php
 
+namespace blacksenator;
+
 /* fbcallrouter is a spam killer
  *
  * This script is an extension for call routing to/from FRITZ!Box
@@ -15,38 +17,24 @@
  */
 
 $config = [
-    'url'          => '192.168.178.1',    // your Fritz!Box IP
-    'user'         => 'dslf_config',      // your Fritz!Box user
-    'password'     => 'xxxxxxxx',         // your Fritz!Box user password
-    'getPhonebook' => 0,                  // phonebook in which you want to check if this number is already known (first = 0!)
-    'refresh'      => 1,                  // after how many days the phonebook should be read again
-    'setPhonebook' => 2,                  // phonebook in which the spam number should be recorded
-    'caller'       => 'autom. gesperrt',  // alias for new caller
-    'type'         => 'default',          // type of phone line (home, work, mobil, fax etc.)
+    'url'          => 'fritz.box',          // your Fritz!Box IP
+    'user'         => 'dslf_config',        // your Fritz!Box user
+    'password'     => 'xxxxxxxx',           // your Fritz!Box user password
+    'getPhonebook' => 0,                    // phonebook in which you want to check if this number is already known (first = 0!)
+    'refresh'      => 1,                    // after how many days the phonebook should be read again
+    'setPhonebook' => 1,                    // phonebook in which the spam number should be recorded
+    'caller'       => 'autom. gesperrt',    // alias for new caller
+    'type'         => 'default',            // type of phone line (home, work, mobil, fax etc.)
 ];
 
-// connect to fritzbox callmonitor port (in a case of error dial #96*5* to open it)
-$fbSocket = stream_socket_client($config['url'] . ":1012", $errno, $errstr);
-if (!$fbSocket) {
-    echo "$errstr ($errno)" . PHP_EOL;
-    exit;
-}
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/src/callrouter.php';
 
-// get SOAP client for phonebook operations
-$contactClient = getClient($config['url'], 'x_contact', 'X_AVM-DE_OnTel:1', $config['user'], $config['password']);
-
-// get SOAP client for dial operations
-$phoneClient = getClient($config['url'], 'x_voip', 'X_VoIP:1', $config['user'], $config['password']);
-
+$callrouter = new callrouter($config);
+// get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
+$fbSocket = $callrouter->getSocket();
 // initial load current phonebook
-$phoneBook = getFBPhonebook($contactClient, $config['getPhonebook']);
-
-// extract just all numbers from the phonebook for a quicker search later on
-$currentNumbers = getNumbers($phoneBook);
-if (count($currentNumbers) == 0) {
-    echo 'The phone book against which you want to check is empty!' . PHP_EOL;
-}
-$lastupdate = time();
+$callrouter->getCurrentData($config['getPhonebook']);
 
 // now listen to the callmonitor and wait for new lines
 echo 'Cocked and rotated...' . PHP_EOL;
@@ -55,160 +43,18 @@ while(true) {
     if($newLine != null) {
         $values = explode(';', $newLine);                      // [DATE TIME];[STATUS];[0];[NUMBER];;;
         if ($values[1] == 'RING') {                            // incomming call
-            if (!in_array($values[3], $currentNumbers)) {      // number is unknown
-                if (getRating($values[3]) > 5) {               // bad reputation
-                    // assamble minimal contact structure
-                    $xmlEntry = newEntry($values[3],$config['caller'], $config['type']);
-                    // add the spam call as new phonebook entry
-                    $contactClient->SetPhonebookEntry(
-                                        new SoapParam($config['setPhonebook'], 'NewPhonebookID'),
-                                        new SoapParam(null, 'NewPhonebookEntryID'),
-                                        new SoapParam($xmlEntry, 'NewPhonebookEntryData')
-                                        );
+            if (!in_array($values[3], $callrouter->currentNumbers)) {      // number is unknown
+                if ($callrouter->getRating($values[3]) > 5) {               // bad reputation
+                    $callrouter->setContact($config['caller'], $values[3], $config['type'], $config['setPhonebook']);
                 }
             }
         }
     } else {
         sleep(1);
     }
+    // refresh
     $currentTime = time();
-    if ($currentTime > ($lastupdate + ($config['refresh'] * 864000))) {
-        $phoneBook = getFBPhonebook($contactClient, $config['getPhonebook']);
-        $currentNumbers = getNumbers($phoneBook);
-        if (count($currentNumbers) == 0) {
-            echo 'The phone book against which you want to check is empty!' . PHP_EOL;
-        }
-        $lastupdate = time();
+    if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 864000))) {
+        $callrouter->getCurrentData($config['getPhonebook']);
     }
-}
-
-/**
- * delivers a new SOAP client
- *
- * @param string $url       Fritz!Box IP
- * @param string $location  TR-064 area (https://avm.de/service/schnittstellen/)
- * @param string $service   TR-064 service (https://avm.de/service/schnittstellen/)
- * @param string $user      Fritz!Box user
- * @param string $password  Fritz!Box password
- * @return stdClass[]
- */
-function getclient($url, $location, $service, $user, $password)
-{
-    $client = new SoapClient(null, [
-                        'location'   => "http://".$url.":49000/upnp/control/".$location,
-                        'uri'        => "urn:dslforum-org:service:".$service,
-                        'noroot'     => True,
-                        'login'      => $user,
-                        'password'   => $password
-                    ]);
-
-    return $client;
-}
-
-/**
- * get a phonebook from FRITZ!Box
- *
- * @param stdClass[] $client SOAP client
- * @param int $phonebookID ID number of FRITZ!Box phone book
- * @return SimpleXMLElement $phonebook
- */
-function getFBPhonebook($client, $phonebookID)
-{
-    $result = $client->GetPhonebook(new SoapParam($phonebookID, 'NewPhonebookID'));
-    $phoneBook = @simplexml_load_file($result['NewPhonebookURL']);
-    $phoneBook->asXML();
-
-    return $phoneBook;
-}
-
-/**
- * delivers an simple array of numbers from a designated phone book
- *
- * @param SimpleXMLElement $phoneBook downloaded phone book
- * @param array $types phonetypes (e.g. home, work, mobil, fax, fax_work)
- * @return array phone numbers
- */
-function getNumbers($phoneBook, $types = [])
-{
-    foreach ($phoneBook->phonebook->contact as $contact) {
-        foreach ($contact->telephony->number as $number) {
-            if ((substr($number, 0, 1) == '*') || (substr($number, 0, 1) == '#')) {
-                continue;
-            }
-            if (count($types)) {
-                if (in_array($number['type'], $types)) {
-                    $number = $number[0]->__toString();
-                } else {
-                    continue;
-                }
-            } else {
-                $number = $number[0]->__toString();
-            }
-            $numbers[] = $number;
-        }
-    }
-
-    return $numbers;
-}
-
-/**
- * delivers a minimal contact structure for AVMs TR-064 interface
- *
- * @param string $number phone number
- * @param string $caller callers name or alias
- * @param string $type phone type (home, work, fax etc.)
- * @return SimpleXMLElement SOAP envelope:
- *                          <?xml version="1.0"?>
- *                          <Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
- *                              <contact>
- *                                  <person>
- *                                      <realName>$caller</realName>
- *                                  </person>
- *                                  <telephony>
- *                                      <number id="0" type=$type>$number</number>
- *                                  </telephony>
- *                              </contact>
- *                          </Envelope>
- */
-function newEntry($number, $caller, $type) : SimpleXMLElement
-{
-    $envelope = new simpleXMLElement('<Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"></Envelope>');
-
-    $contact = $envelope->addChild('contact');
-
-    $person = $contact->addChild('person');
-    $person->addChild('realName', $caller);
-
-    $telephony = $contact->addChild('telephony');
-
-    $phone = $telephony->addChild('number', $number);
-    $phone->addAttribute('id', 0);
-    $phone->addAttribute('type', $type);
-
-    return $envelope;
-}
-
-/**
- * get the tellows score if it is above 5 (neutral) and it got more than 3 comments
- *
- * @param string $number phone number
- * @param int $comments  must be three or higher (everything else makes no sense)
- * @return int $score
- */
-function getRating($number, $comments = 3)
-{
-    $score = 5;
-    if ($comments < 3) {
-        $comments = 3;
-    }
-    $url = sprintf('http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123', $number);
-    $rating = @simplexml_load_file($url);
-    if ($rating !== false) {
-        $rating->asXML();
-        if (($rating->score > 5) && ($rating->comments >= $comments)) {
-            $score = $rating->score;
-        }
-    }
-
-    return $score;
 }

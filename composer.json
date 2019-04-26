@@ -1,16 +1,17 @@
 {
-    "name": "BlackSenator/fbcallrouter",
+    "name": "blacksenator/fbcallrouter",
     "type": "project",
     "license": "MIT",
-    "description": "",
+    "description": "FRITZ!Box call router for spam calls",
     "authors": [
         {
-            "name": "BlackSenator",
+            "name": "Volker Püschel",
             "email": "knuffy@anasco.de"
         }
     ],
     "require": {
-        "php": "^7.0"
+        "php": "^7.0",
+        "blacksenator/fritzsoap": "dev-master#1.0"
     },
     "autoload": {
         "psr-4": {
