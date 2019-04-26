@@ -9,6 +9,7 @@ If this is the case, the number will be transferred to the corresponding phonebo
 
   * PHP 7.0 (`apt-get install php7.0 php7.0-curl php7.0-mbstring php7.0-xml`)
   * callmonitor (port 1012) is open - dial `#96*5*` to open it
+  * Composer (follow the installation guide at https://getcomposer.org/download/)
 
 ## Installation
 
@@ -16,6 +17,10 @@ Install requirements are:
 
     git clone https://github.com/BlackSenator/fbcallrouter.git
     cd fbcallrouter
+
+Install composer (see https://getcomposer.org/download/ for newer instructions):
+
+    composer install
 
 Edit the `['config']` section in `fbcallrouter.php` and save it:
 
