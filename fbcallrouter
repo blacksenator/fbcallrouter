@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+namespace blacksenator;
+
+use Symfony\Component\Console\Application;
+
+require_once('vendor/autoload.php');
+
+$app = new Application('FRITZ!Box router for spam calls');
+
+$app->addCommands(array(
+    new RunCommand()
+));
+
+$app->run();

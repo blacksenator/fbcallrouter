@@ -1,20 +1,27 @@
 {
-    "name": "blacksenator/fbcallrouter",
+    "name": "blacksenator/box2dbf",
     "type": "project",
+    "description": "",
     "license": "MIT",
-    "description": "FRITZ!Box call router for spam calls",
     "authors": [
         {
-            "name": "Volker Püschel",
+            "name": "blacksenator",
             "email": "knuffy@anasco.de"
         }
     ],
     "require": {
         "php": "^7.0",
-        "blacksenator/fritzsoap": "dev-master#1.0"
+        "symfony/console": "^3.0",
+        "blacksenator/fritzsoap": "^1.0"
     },
     "autoload": {
         "psr-4": {
-        }
+            "blacksenator\\": "src/",
+            "Test\\": "tests/"
+        },
+        "files": ["src/functions.php"]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6"
     }
 }

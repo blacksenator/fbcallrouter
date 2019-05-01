@@ -8,8 +8,8 @@ Type=simple
 Restart=always
 RestartSec=1
 WorkingDirectory=/fbcallrouter/
-ExecStart=/usr/bin/env php /fbcallrouter/fbcallrouter.php
-User=volumio
+ExecStart=/usr/bin/env php /fbcallrouter/fbcallrouter run
+User=   #enter your user!
 
 [Install]
 WantedBy=multi-user.target
