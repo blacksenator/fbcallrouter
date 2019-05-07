@@ -9,4 +9,5 @@ $config = [
     'setPhonebook' => 1,                    // phonebook in which the spam number should be recorded
     'caller'       => 'autom. gesperrt',    // alias for new caller
     'type'         => 'default',            // type of phone line (home, work, mobil, fax etc.)
+    'logging'      => '',                   // were callrouter_logging.txt schould be saved e.g. 'C:/Users/Admin/Documents/',
 ];

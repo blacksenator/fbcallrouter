@@ -14,6 +14,48 @@ class callrouter
 {
     const CALLMONITORPORT = '1012';     // FRITZ!Box port for callmonitor
     const DELIMITER = ';';
+    const CELLUAR = [                   // an array of celluar network codes (RNB) according to the list of ONB
+                '151' => 'Telekom',     // source from: BNetzA at https://tinyurl.com/y7648pc9
+                '1511' => 'Telekom',
+                '1512' => 'Telekom',
+                '1514' => 'Telekom',
+                '1515' => 'Telekom',
+                '1516' => 'Telekom',
+                '1517' => 'Telekom',
+                '152' => 'Vodafone',
+                '1520' => 'Vodafone',
+                '1521' => 'Vodafone/Lyca',
+                '1522' => 'Vodafone',
+                '1523' => 'Vodafone',
+                '1525' => 'Vodafone',
+                '1526' => 'Vodafone',
+                '1529' => 'Vodafone/Truphone',
+                '15566' => 'Drillisch',
+                '16630' => 'Argon',
+                '157' => 'E-Plus',
+                '1570' => 'Telefónica',
+                '1573' => 'Telefónica',
+                '1575' => 'Telefónica',
+                '1577' => 'Telefónica',
+                '1578' => 'Telefónica',
+                '1579' => 'Telefónica/SipGate',
+                '15888' => 'TelcoVillage',
+                '159' => 'Telefónica',
+                '1590' => 'Telefónica',
+                '160' => 'Telekom',
+                '162' => 'Vodafone',
+                '163' => 'Telefónica',
+                '170' => 'Telekom',
+                '171' => 'Telekom',
+                '172' => 'Vodafone',
+                '173' => 'Vodafone',
+                '174' => 'Vodafone',
+                '175' => 'Telekom',
+                '176' => 'Telefónica',
+                '177' => 'Telefónica',
+                '178' => 'Telefónica',
+                '179' => 'Telefónica',
+    ];
 
     public $currentNumbers = [];
     public $lastupdate;
@@ -21,6 +63,7 @@ class callrouter
     private $fritzbox;
     private $url;
     private $areaCodes = [];
+    private $loggingPath;
 
     public function __construct($config)
     {
@@ -29,6 +72,7 @@ class callrouter
         $this->fritzbox->getClient('x_contact', 'X_AVM-DE_OnTel:1');
         $this->lastupdate = time();
         $this->getAreaCodes();
+        $this->loggingPath = isset($config['logging']) ? $config['logging'] : null;
     }
 
     /**
@@ -96,22 +140,23 @@ class callrouter
     /**
      * get a simple array, where the area code (ONB) is key and area name is value
      * ONB stands for OrtsNetzBereich(e)
-     * source is "Vorwahlverzeichnis (VwV)" a zipped CSV from:
-     * https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html
+     * source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA at https://tinyurl.com/y4umk5ww
      * if you want to update this: save the unpacked file as "ONB.csv" in ./assets
      *
      * @return void
      */
     private function getAreaCodes()
     {
+        $areaCodes = [];
         $rows = array_map(function($row) { return str_getcsv($row, SELF::DELIMITER); }, file('./assets/ONB.csv'));
-        array_shift($rows);             // delete header
+        array_shift($rows);                                             // delete header
         foreach($rows as $row) {
-            if ($row[2] == 1) {         // only active ONBs ("1")
-                $this->areaCodes[$row[0]] = $row[1];
+            if ($row[2] == 1) {                                         // only active ONBs ("1")
+                $areaCodes[$row[0]] = $row[1];
             }
         }
-        krsort($this->areaCodes, SORT_STRING);
+        $this->areaCodes = $areaCodes + SELF::CELLUAR;                  // adding celluar network codes
+        krsort($this->areaCodes, SORT_STRING);                          // reverse sorting for quicker result
     }
 
     /**
@@ -156,11 +201,36 @@ class callrouter
         return $score;
     }
 
+    /**
+     * set a new contact in a phonebook
+     *
+     * @param string $name
+     * @param string $number
+     * @param string $type
+     * @param int $phonebook
+     * @return void
+     */
     public function setContact($name, $number, $type, $phonebook)
     {
         // assamble minimal contact structure
         $spamContact = $this->fritzbox->newContact($name, $number, $type);
         // add the spam call as new phonebook entry
         $this->fritzbox->setPhonebookEntry($spamContact, $phonebook);
+    }
+
+
+
+    /**
+     * set logging info
+     *
+     * @param string $info
+     * @return void
+     */
+    public function setLogging ($info)
+    {
+        if ($this->loggingPath) {
+            $message = date('d.m.Y H:i:s') . ' => ' . $info;
+            file_put_contents($this->loggingPath . 'callrouter_logging.txt', $message, FILE_APPEND);
+        }
     }
 }
