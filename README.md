@@ -1,16 +1,22 @@
 # An extended call routing for AVM FRITZ!Box
 
 The programm is trying to identify spam calls. So it is listen to the FRITZ!Box callmonitor and does several washes.
+
 **The program only works in the German telephone network!**
 
 For an incoming call a cascaded check takes place:
-First, it is checked whether the number is already known in one of your telephone books (`'getPhonebook'`).
-If not,  than it is checked if the caller used a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so the number will be transferred to the corresponding phonebook (`'setPhonebook'`) for future rejections.
-If the area code is valid it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score ( six to ten) and at least more than three comments. You can adapt the values in the configuration file. The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect (For example, the after sales service of a product for which you are happy to provide information).
+First, it is checked, whether the number is already known in one of your telephone books (`'getPhonebook'`).
+
+If not,  than it is checked if the caller used a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'setPhonebook'`) for future rejections.
+
+If the area code is valid, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score ( six to ten) and at least more than three comments. You can adapt the values in the configuration file.
+The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect.
 But if the score is proven bad, the number will be transferred to the corresponding phonebook (spam) for future rejections.
+
 If you´re setting `'logging'` with a valid path the essential process steps for verification are written to the log file `callrouter_logging.txt`. E.g. `'./'` will write the logging file in the program directory.
 
 *ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html) and should be valid for a limited period of time. If you want to update them, then download the CSV file offered. Unpack the archive (if necessary in the archive) and save the file as ONB.csv in the `./assets` directory.
+
 **celluar codes are recently set fix as const `CELLUAR` in `callrouter.php`. The [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html) provided no list for download.
 
 ## Requirements
