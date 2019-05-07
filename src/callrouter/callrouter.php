@@ -177,27 +177,22 @@ class callrouter
     }
 
     /**
-     * get the tellows score if it is above 5 (neutral) and it got more than 3 comments
+     * get the tellows score and comments
      *
      * @param string $number phone number
-     * @param int $comments  must be three or higher (everything else makes no sense)
-     * @return int $score
+     * @return array|bool $score
      */
-    public function getRating($number, $comments = 3)
+    public function getRating($number)
     {
-        $score = 5;
-        if ($comments < 3) {
-            $comments = 3;
-        }
+        $score = [];
         $url = sprintf('http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123', $number);
         $rating = @simplexml_load_file($url);
-        if ($rating !== false) {
-            $rating->asXML();
-            if (($rating->score > 5) && ($rating->comments >= $comments)) {
-                $score = $rating->score;
-            }
+        if (!$rating) {
+            return false;
         }
-
+        $rating->asXML();
+        $score = ['score' => $rating->score,
+            'comments' => $rating->comments];
         return $score;
     }
 

@@ -33,16 +33,32 @@ function callRouter($config)
                         $callrouter->setContact($config['caller'], $number, $config['type'], $config['setPhonebook']);
                         $message = sprintf('Caller used fake area code! Added to spam phonebook #%s', $config['setPhonebook']);
                         $callrouter->setLogging($message . PHP_EOL);
-                    } else {
+                    } else {                                                // area code is valid
                         $message = sprintf('Found valid area code: %s', $areaCode);
                         $callrouter->setLogging($message . PHP_EOL);
-                        if ($callrouter->getRating($number) > 5) {          // bad reputation
-                            $callrouter->setContact($config['caller'], $number, $config['type'], $config['setPhonebook']);
-                            $message = sprintf('Caller has a bad reputation! Added to spam phonebook #%s', $config['setPhonebook']);
-                            $callrouter->setLogging($message . PHP_EOL);
+                        $result = $callrouter->getRating($number);
+                        if (!$result) {                                     // request returned false
+                            $callrouter->setLogging('Request at tellows failed!' . PHP_EOL);
+                        } else {
+                            if (($result['score'] > $config['score']) && ($result['comments'] > $config['comments'])) {
+                                // bad reputation
+                                $callrouter->setContact($config['caller'], $number, $config['type'], $config['setPhonebook']);
+                                $message = sprintf('Caller has a bad reputation! Added to spam phonebook #%s', $config['setPhonebook']);
+                                $callrouter->setLogging($message . PHP_EOL);
+                            } else {                                        // positiv or indifferent reputation
+                                $ratingText = ' (neutral)';
+                                if ($result['score'] < 5) {
+                                    $ratingText = ' (positive)';
+                                }
+                                if ($result['score'] > 5) {
+                                    $ratingText = ' (negative)';
+                                }
+                                $message = sprintf('Caller has a score %s%s and %s comments.', $result['score'], $ratingText, $result['comments']);
+                                $callrouter->setLogging($message . PHP_EOL);
+                            }
                         }
                     }
-                } else {
+                } else {                                                // known number
                     $message = sprintf('Number %s found in phonebook #%s', $number, $config['getPhonebook']);
                     $callrouter->setLogging($message . PHP_EOL);
                 }
