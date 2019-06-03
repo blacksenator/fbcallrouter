@@ -15,78 +15,92 @@ class callrouter
     const CALLMONITORPORT = '1012';     // FRITZ!Box port for callmonitor
     const DELIMITER = ';';
     const CELLUAR = [                   // an array of celluar network codes (RNB) according to the list of ONB
-                '151' => 'Telekom',     // source from: BNetzA at https://tinyurl.com/y7648pc9
-                '1511' => 'Telekom',
-                '1512' => 'Telekom',
-                '1514' => 'Telekom',
-                '1515' => 'Telekom',
-                '1516' => 'Telekom',
-                '1517' => 'Telekom',
-                '152' => 'Vodafone',
-                '1520' => 'Vodafone',
-                '1521' => 'Vodafone/Lyca',
-                '1522' => 'Vodafone',
-                '1523' => 'Vodafone',
-                '1525' => 'Vodafone',
-                '1526' => 'Vodafone',
-                '1529' => 'Vodafone/Truphone',
+                '151'   => 'Telekom',     // source from: BNetzA at https://tinyurl.com/y7648pc9
+                '1511'  => 'Telekom',
+                '1512'  => 'Telekom',
+                '1514'  => 'Telekom',
+                '1515'  => 'Telekom',
+                '1516'  => 'Telekom',
+                '1517'  => 'Telekom',
+                '152'   => 'Vodafone',
+                '1520'  => 'Vodafone',
+                '1521'  => 'Vodafone/Lyca',
+                '1522'  => 'Vodafone',
+                '1523'  => 'Vodafone',
+                '1525'  => 'Vodafone',
+                '1526'  => 'Vodafone',
+                '1529'  => 'Vodafone/Truphone',
                 '15566' => 'Drillisch',
                 '16630' => 'Argon',
-                '157' => 'E-Plus',
-                '1570' => 'Telefónica',
-                '1573' => 'Telefónica',
-                '1575' => 'Telefónica',
-                '1577' => 'Telefónica',
-                '1578' => 'Telefónica',
-                '1579' => 'Telefónica/SipGate',
+                '157'   => 'E-Plus',
+                '1570'  => 'Telefónica',
+                '1573'  => 'Telefónica',
+                '1575'  => 'Telefónica',
+                '1577'  => 'Telefónica',
+                '1578'  => 'Telefónica',
+                '1579'  => 'Telefónica/SipGate',
                 '15888' => 'TelcoVillage',
-                '159' => 'Telefónica',
-                '1590' => 'Telefónica',
-                '160' => 'Telekom',
-                '162' => 'Vodafone',
-                '163' => 'Telefónica',
-                '170' => 'Telekom',
-                '171' => 'Telekom',
-                '172' => 'Vodafone',
-                '173' => 'Vodafone',
-                '174' => 'Vodafone',
-                '175' => 'Telekom',
-                '176' => 'Telefónica',
-                '177' => 'Telefónica',
-                '178' => 'Telefónica',
-                '179' => 'Telefónica',
-    ];
+                '159'   => 'Telefónica',
+                '1590'  => 'Telefónica',
+                '160'   => 'Telekom',
+                '162'   => 'Vodafone',
+                '163'   => 'Telefónica',
+                '170'   => 'Telekom',
+                '171'   => 'Telekom',
+                '172'   => 'Vodafone',
+                '173'   => 'Vodafone',
+                '174'   => 'Vodafone',
+                '175'   => 'Telekom',
+                '176'   => 'Telefónica',
+                '177'   => 'Telefónica',
+                '178'   => 'Telefónica',
+                '179'   => 'Telefónica',
+            ];
 
+    public $phonebookList;
     public $currentNumbers = [];
+    public $areaCodes = [];
     public $lastupdate;
 
     private $fritzbox;
     private $url;
-    private $areaCodes = [];
+    private $logging = false;
     private $loggingPath;
 
+    /**
+     * @param array $config
+     * @return void
+     */
     public function __construct($config)
     {
         $this->fritzbox = new fritzsoap($config['url'], $config['user'], $config['password']);
         $this->url = $this->fritzbox->getURL();
         $this->fritzbox->getClient('x_contact', 'X_AVM-DE_OnTel:1');
+        $this->phonebookList = $this->fritzbox->getPhonebookList();
         $this->lastupdate = time();
-        $this->getAreaCodes();
-        $this->loggingPath = isset($config['logging']) ? $config['logging'] : null;
+        $this->setAreaCodes();
+        if ($config['logging']) {
+            $this->logging = true;
+            if (isset($config['loggingPath']) && (!empty($config['loggingPath']))) {
+                $this->loggingPath = $config['loggingPath'];
+            } else {
+                $this->loggingPath = dirname(__DIR__, 2);
+            }
+        }
     }
 
     /**
      * get the FRITZ!Box callmonitor socket
      *
-     * @return stream|bool $socket
+     * @return resource|bool $socket
      */
     public function getSocket()
     {
-        $adress = $this->url['host'] . ':' . SELF::CALLMONITORPORT;
+        $adress = $this->url['host'] . ':' . self::CALLMONITORPORT;
         $socket = stream_socket_client($adress, $errno, $errstr);
             if (!$socket) {
                 error_log(sprintf("Could not listen to callmonitor! Error: %s (%s)!", $errstr, $errno));
-                return;
+                return false;
             }
 
         return $socket;
@@ -94,17 +108,20 @@ class callrouter
 
     /**
      * get current data from FRITZ!Box
+     *
+     * @param int $phonebookID
+     * @return
      */
     function getCurrentData($phonebookID)
     {
         $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
-            $numbers = $this->getNumbers($phoneBook);
-            if (count($numbers) == 0) {
-                echo 'The phone book against which you want to check is empty!' . PHP_EOL;
-            } else {
-                $this->lastupdate = time();
-                $this->currentNumbers = $numbers;
-            }
+        $numbers = $this->getNumbers($phoneBook);
+        if (count($numbers) == 0) {
+            echo 'The phone book against which you want to check is empty!' . PHP_EOL;
+        } else {
+            $this->lastupdate = time();
+            $this->currentNumbers = $numbers;
+        }
     }
 
     /**
@@ -116,6 +133,7 @@ class callrouter
      */
     private function getNumbers($phoneBook, $types = [])
     {
+        $numbers = [];
         foreach ($phoneBook->phonebook->contact as $contact) {
             foreach ($contact->telephony->number as $number) {
                 if ((substr($number, 0, 1) == '*') || (substr($number, 0, 1) == '#')) {
@@ -123,12 +141,12 @@ class callrouter
                 }
                 if (count($types)) {
                     if (in_array($number['type'], $types)) {
-                        $number = $number[0]->__toString();
+                        $number = (string)$number[0];
                     } else {
                         continue;
                     }
                 } else {
-                    $number = $number[0]->__toString();
+                    $number = (string)$number[0];
                 }
                 $numbers[] = $number;
             }
@@ -138,32 +156,35 @@ class callrouter
     }
 
     /**
-     * get a simple array, where the area code (ONB) is key and area name is value
+     * set a simple array, where the area code (ONB) is key and area name is value
      * ONB stands for OrtsNetzBereich(e)
      * source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA at https://tinyurl.com/y4umk5ww
      * if you want to update this: save the unpacked file as "ONB.csv" in ./assets
      *
      * @return void
      */
-    private function getAreaCodes()
+    private function setAreaCodes()
     {
-        $areaCodes = [];
-        $rows = array_map(function($row) { return str_getcsv($row, SELF::DELIMITER); }, file('./assets/ONB.csv'));
+        if (!$onbData = file(dirname(__DIR__, 2) . '/assets/ONB.csv')) {
+            echo 'Could not read ONB data!';
+            return;
+        }
+        $rows = array_map(function($row) { return str_getcsv($row, self::DELIMITER); }, $onbData);
         array_shift($rows);                                             // delete header
         foreach($rows as $row) {
             if ($row[2] == 1) {                                         // only active ONBs ("1")
-                $areaCodes[$row[0]] = $row[1];
+                $this->areaCodes[$row[0]] = $row[1];
             }
         }
-        $this->areaCodes = $areaCodes + SELF::CELLUAR;                  // adding celluar network codes
+        $this->areaCodes = $this->areaCodes + self::CELLUAR;                  // adding celluar network codes
         krsort($this->areaCodes, SORT_STRING);                          // reverse sorting for quicker result
     }
 
     /**
      * get the area from a phone number
      *
-     * @param string $phoneNumber
-     * @return string|bool $area
+     * @param string $phoneNumber to extract the area code from
+     * @return string|bool $area the found area code or false
      */
     public function getArea($phoneNumber)
     {
@@ -177,10 +198,10 @@ class callrouter
     }
 
     /**
-     * get the tellows score and comments
+     * get the tellows rating and number of comments
      *
      * @param string $number phone number
-     * @return array|bool $score
+     * @return array|bool $score array of rating and number of comments or false
      */
     public function getRating($number)
     {
@@ -191,8 +212,10 @@ class callrouter
             return false;
         }
         $rating->asXML();
-        $score = ['score' => $rating->score,
-            'comments' => $rating->comments];
+        $score = [
+            'score' => $rating->score,
+            'comments' => $rating->comments,
+        ];
         return $score;
     }
 
@@ -213,8 +236,6 @@ class callrouter
         $this->fritzbox->setPhonebookEntry($spamContact, $phonebook);
     }
 
-
-
     /**
      * set logging info
      *
@@ -223,9 +244,9 @@ class callrouter
      */
     public function setLogging ($info)
     {
-        if ($this->loggingPath) {
-            $message = date('d.m.Y H:i:s') . ' => ' . $info;
-            file_put_contents($this->loggingPath . 'callrouter_logging.txt', $message, FILE_APPEND);
+        if ($this->logging) {
+            $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
+            file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
         }
     }
 }

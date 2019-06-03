@@ -8,16 +8,26 @@ use \SimpleXMLElement;
 
 function callRouter($config)
 {
+    $whitelist = (string)$config['whitelist'];
+    $blacklist = (string)$config['blacklist'];
     date_default_timezone_set("Europe/Berlin");
     $callrouter = new callrouter($config);
     // get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
     $fbSocket = $callrouter->getSocket();
-    // initial load current phonebook
-    $callrouter->getCurrentData($config['getPhonebook']);
+    if (strpos($callrouter->phonebookList, $whitelist) === false) {
+        $message = sprintf('The phonebook #%s (whitelist) is not available!', $whitelist);
+        error_log($message);
+    } else {
+        $callrouter->getCurrentData($whitelist);            // initial load current phonebook
+    }
+    if (strpos($callrouter->phonebookList, $blacklist) === false) {
+        $message = sprintf('The phonebook #%s (blacklist) is not available!', $blacklist);
+        error_log($message);
+    }
 
     // now listen to the callmonitor and wait for new lines
     echo 'Cocked and unlocked...' . PHP_EOL;
-    $callrouter->setLogging('Program started. Listen to call monitor.' . PHP_EOL);
+    $callrouter->setLogging('Program started. Listen to call monitor.');
     while(true) {
         $newLine = fgets($fbSocket);
         if($newLine != null) {
@@ -25,46 +35,41 @@ function callRouter($config)
             if ($values[1] == 'RING') {                                     // incomming call
                 $number = $values[3];                                       // caller number
                 $message = sprintf('Call from number %s to MSN %s', $number, $values[4]);
-                $callrouter->setLogging($message . PHP_EOL);
-                if (!in_array($number, $callrouter->currentNumbers)) {      // number is unknown
-                    $callrouter->setLogging('Could not find caller in phonebook. Checking area code.' . PHP_EOL);
-                    $areaCode = $callrouter->getArea($number);
-                    if (!$areaCode) {                                       // fake area code
-                        $callrouter->setContact($config['caller'], $number, $config['type'], $config['setPhonebook']);
-                        $message = sprintf('Caller used fake area code! Added to spam phonebook #%s', $config['setPhonebook']);
-                        $callrouter->setLogging($message . PHP_EOL);
-                    } else {                                                // area code is valid
-                        $message = sprintf('Found valid area code: %s', $areaCode);
-                        $callrouter->setLogging($message . PHP_EOL);
-                        $result = $callrouter->getRating($number);
-                        if (!$result) {                                     // request returned false
-                            $callrouter->setLogging('Request at tellows failed!' . PHP_EOL);
-                        } else {
-                            if (($result['score'] > $config['score']) && ($result['comments'] > $config['comments'])) {
-                                // bad reputation
-                                $callrouter->setContact($config['caller'], $number, $config['type'], $config['setPhonebook']);
-                                $message = sprintf('Caller has a bad reputation! Added to spam phonebook #%s', $config['setPhonebook']);
-                                $callrouter->setLogging($message . PHP_EOL);
-                            } else {                                        // positiv or indifferent reputation
-                                $ratingText = ' (neutral)';
-                                if ($result['score'] < 5) {
-                                    $ratingText = ' (positive)';
-                                }
-                                if ($result['score'] > 5) {
-                                    $ratingText = ' (negative)';
-                                }
-                                $message = sprintf('Caller has a score %s%s and %s comments.', $result['score'], $ratingText, $result['comments']);
-                                $callrouter->setLogging($message . PHP_EOL);
-                            }
+                $callrouter->setLogging($message);
+                // step 1: check if number is known (in phonebook included)
+                if (in_array($number, $callrouter->currentNumbers)) {
+                    $message = sprintf('Number %s found in phonebook #%s', $number, $whitelist);
+                    $callrouter->setLogging($message);
+                // step 2: put a foreign number on blacklist
+                } elseif ($config['blockForeign'] && substr($number, 0, 2) === '00') {
+                    $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                    $message = sprintf('Foreign number! Added to spam phonebook #%s', $blacklist);
+                    $callrouter->setLogging($message);
+                // step 3: put domestic numbers with invalid area code on blacklist
+                } elseif (!$callrouter->getArea($number) && !substr($number, 0, 2) === '00') {
+                    $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                    $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $blacklist);
+                    $callrouter->setLogging($message);
+                // step 4: try to get a rating
+                } else {
+                    $result = $callrouter->getRating($number);
+                    if (!$result) {                                     // request returned false
+                        $callrouter->setLogging('The request to tellows failed!');
+                    } else {
+                        // if rating (score & comments) is equal or above settings put on blacklist
+                        if (($result['score'] >= $config['score']) && ($result['comments'] >= $config['comments'])) {
+                            $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                            $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $result['score'], $result['comments'], $blacklist);
+                            $callrouter->setLogging($message);
+                        } else {                                        // positiv or indifferent reputation
+                            $message = sprintf('Caller has a rating of %s and %s comments.', $result['score'], $result['comments']);
+                            $callrouter->setLogging($message);
                         }
                     }
-                } else {                                                // known number
-                    $message = sprintf('Number %s found in phonebook #%s', $number, $config['getPhonebook']);
-                    $callrouter->setLogging($message . PHP_EOL);
                 }
             }
             if ($values[1] == 'DISCONNECT') {
-                $callrouter->setLogging('Disconnected' . PHP_EOL);
+                $callrouter->setLogging('Disconnected');
             }
         } else {
             sleep(1);
@@ -72,7 +77,7 @@ function callRouter($config)
         // refresh
         $currentTime = time();
         if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 864000))) {
-            $callrouter->getCurrentData($config['getPhonebook']);
+            $callrouter->getCurrentData($whitelist);
         }
     }
 }

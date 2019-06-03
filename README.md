@@ -5,15 +5,18 @@ The programm is trying to identify spam calls. So it is listen to the FRITZ!Box 
 **The program only works in the German telephone network!**
 
 For an incoming call a cascaded check takes place:
-First, it is checked, whether the number is already known in one of your telephone books (`'getPhonebook'`).
 
-If not,  than it is checked if the caller used a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'setPhonebook'`) for future rejections.
+First, it is checked, whether the number is already known in one of your telephone books (`'whitelist'`).
 
-If the area code is valid, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score ( six to ten) and at least more than three comments. You can adapt the values in the configuration file.
+If not, than it is checked if it is a foreign number. If you set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+
+Than it is checked if a domestic number has a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+
+If all this passed, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score (six to ten) and at least more than three comments. You can adapt the values in the configuration file.
 The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect.
-But if the score is proven bad, the number will be transferred to the corresponding phonebook (spam) for future rejections.
+But if the score is proven bad according to your settings, the number will be transferred to the corresponding phonebook (spam) for future rejections.
 
-If you´re setting `'logging'` with a valid path the essential process steps for verification are written to the log file `callrouter_logging.txt`. E.g. `'./'` will write the logging file in the program directory.
+If you set `'logging'` and the `'loggingPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'loggingPath'` is empty the programm directory is default.
 
 *ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html) and should be valid for a limited period of time. If you want to update them, then download the CSV file offered. Unpack the archive (if necessary in the archive) and save the file as ONB.csv in the `./assets` directory.
 
