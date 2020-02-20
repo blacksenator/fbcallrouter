@@ -8,21 +8,20 @@ namespace blacksenator\callrouter;
  * @license MIT
  */
 
-use blacksenator\fritzsoap\fritzsoap;
+use blacksenator\fritzsoap\x_contact;
+use SimpleXMLElement;
 
 class callrouter
 {
     const CALLMONITORPORT = '1012';     // FRITZ!Box port for callmonitor
-    const DELIMITER = ';';
+    const DELIMITER = ';';  	        // delimiter in /assets/ONB.csv
     const CELLUAR = [                   // an array of celluar network codes (RNB) according to the list of ONB
-                '151'   => 'Telekom',     // source from: BNetzA at https://tinyurl.com/y7648pc9
-                '1511'  => 'Telekom',
+                '1511'  => 'Telekom',   // source from: BNetzA at https://tinyurl.com/y7648pc9
                 '1512'  => 'Telekom',
                 '1514'  => 'Telekom',
                 '1515'  => 'Telekom',
                 '1516'  => 'Telekom',
                 '1517'  => 'Telekom',
-                '152'   => 'Vodafone',
                 '1520'  => 'Vodafone',
                 '1521'  => 'Vodafone/Lyca',
                 '1522'  => 'Vodafone',
@@ -31,8 +30,8 @@ class callrouter
                 '1526'  => 'Vodafone',
                 '1529'  => 'Vodafone/Truphone',
                 '15566' => 'Drillisch',
-                '16630' => 'Argon',
-                '157'   => 'E-Plus',
+                '15630' => 'multiConnect',
+                '15678' => 'Argon',
                 '1570'  => 'Telefónica',
                 '1573'  => 'Telefónica',
                 '1575'  => 'Telefónica',
@@ -40,7 +39,6 @@ class callrouter
                 '1578'  => 'Telefónica',
                 '1579'  => 'Telefónica/SipGate',
                 '15888' => 'TelcoVillage',
-                '159'   => 'Telefónica',
                 '1590'  => 'Telefónica',
                 '160'   => 'Telekom',
                 '162'   => 'Vodafone',
@@ -57,15 +55,15 @@ class callrouter
                 '179'   => 'Telefónica',
             ];
 
-    public $phonebookList;
     public $currentNumbers = [];
     public $areaCodes = [];
     public $lastupdate;
 
-    private $fritzbox;
-    private $url;
+    private $fritzbox;                                      // SOAP client
+    private $url = [];                                      // url components as array
+    private $phonebookList;
     private $logging = false;
-    private $loggingPath;
+    private $loggingPath = '';
 
     /**
      * @param array $config
@@ -73,12 +71,11 @@ class callrouter
      */
     public function __construct($config)
     {
-        $this->fritzbox = new fritzsoap($config['url'], $config['user'], $config['password']);
+        $this->fritzbox = new x_contact($config['url'], $config['user'], $config['password']);
         $this->url = $this->fritzbox->getURL();
-        $this->fritzbox->getClient('x_contact', 'X_AVM-DE_OnTel:1');
+        $this->fritzbox->getClient();
         $this->phonebookList = $this->fritzbox->getPhonebookList();
-        $this->lastupdate = time();
-        $this->setAreaCodes();
+        $this->getAreaCodes();
         if ($config['logging']) {
             $this->logging = true;
             if (isset($config['loggingPath']) && (!empty($config['loggingPath']))) {
@@ -107,31 +104,45 @@ class callrouter
     }
 
     /**
+     * get list of avalable phonebooks
+     *
+     * @return string $phonebookList
+     */
+    public function getPhonebookList(): string
+    {
+        return $this->phonebookList;
+    }
+
+    /**
      * get current data from FRITZ!Box
      *
      * @param int $phonebookID
-     * @return
+     * @return void
      */
-    function getCurrentData($phonebookID)
+    function getCurrentData(int $phonebookID = 0)
     {
+        $numbers = [];
         $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
-        $numbers = $this->getNumbers($phoneBook);
-        if (count($numbers) == 0) {
-            echo 'The phone book against which you want to check is empty!' . PHP_EOL;
-        } else {
-            $this->lastupdate = time();
-            $this->currentNumbers = $numbers;
+        if ($phoneBook != false) {
+            $numbers = $this->getNumbers((object)$phoneBook);
+            if (count($numbers) == 0) {
+                exit('The phone book against which you want to check is empty!');
+            } else {
+                $this->lastupdate = time();
+                $this->currentNumbers = $numbers;
+            }
         }
     }
 
     /**
-     * delivers an simple array of numbers from a designated phone book
+     * delivers a simple array of numbers from a designated phone book
+     * according to $types - if you want only numbers of a special type
      *
      * @param SimpleXMLElement $phoneBook downloaded phone book
      * @param array $types phonetypes (e.g. home, work, mobil, fax, fax_work)
      * @return array phone numbers
      */
-    private function getNumbers($phoneBook, $types = [])
+    private function getNumbers(SimpleXMLElement $phoneBook, array $types = []): array
     {
         $numbers = [];
         foreach ($phoneBook->phonebook->contact as $contact) {
@@ -156,18 +167,21 @@ class callrouter
     }
 
     /**
-     * set a simple array, where the area code (ONB) is key and area name is value
+     * get an array, where the area code (ONB) is key and area name is value
      * ONB stands for OrtsNetzBereich(e)
      * source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA at https://tinyurl.com/y4umk5ww
      * if you want to update this: save the unpacked file as "ONB.csv" in ./assets
      *
      * @return void
      */
-    private function setAreaCodes()
+    private function getAreaCodes()
     {
         if (!$onbData = file(dirname(__DIR__, 2) . '/assets/ONB.csv')) {
             echo 'Could not read ONB data!';
             return;
+        }
+        if (end($onbData) == "\x1a") {                                  // file comes with this char at eof
+            array_pop($onbData);
         }
         $rows = array_map(function($row) { return str_getcsv($row, self::DELIMITER); }, $onbData);
         array_shift($rows);                                             // delete header
@@ -176,7 +190,7 @@ class callrouter
                 $this->areaCodes[$row[0]] = $row[1];
             }
         }
-        $this->areaCodes = $this->areaCodes + self::CELLUAR;                  // adding celluar network codes
+        $this->areaCodes = $this->areaCodes + self::CELLUAR;            // adding celluar network codes
         krsort($this->areaCodes, SORT_STRING);                          // reverse sorting for quicker result
     }
 
@@ -186,7 +200,7 @@ class callrouter
      * @param string $phoneNumber to extract the area code from
      * @return string|bool $area the found area code or false
      */
-    public function getArea($phoneNumber)
+    public function getArea(string $phoneNumber)
     {
         foreach ($this->areaCodes as $key => $value) {
             if (substr($phoneNumber, 1, strlen($key)) == $key) {    // area codes are without leading zeros
@@ -203,7 +217,7 @@ class callrouter
      * @param string $number phone number
      * @return array|bool $score array of rating and number of comments or false
      */
-    public function getRating($number)
+    public function getRating(string $number)
     {
         $score = [];
         $url = sprintf('http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123', $number);
@@ -216,6 +230,7 @@ class callrouter
             'score' => $rating->score,
             'comments' => $rating->comments,
         ];
+
         return $score;
     }
 
@@ -248,5 +263,34 @@ class callrouter
             $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
             file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
         }
+    }
+
+    /**
+     * parse a string from callmonitor socket output
+     * e.g.: "01.01.20 10:10:10;RING;0;01701234567;987654;SIP0;\r\n"
+     *
+     * @param string $line
+     * @return array $result
+     */
+    public function parseCallString(string $line): array
+    {
+        $line = str_replace(';\\r\\n', '', $line);      // eliminate CR
+        @list(
+            $moment,
+            $type,
+            $conID,
+            $extern,
+            $intern,
+            $device,
+        ) = explode(';', $line);
+
+        return [
+            'timestamp' => $moment,
+            'type' => $type,
+            'conID' => $conID,
+            'extern' => $extern,
+            'intern' => $intern,
+            'device' => $device,
+        ];
     }
 }

@@ -2,9 +2,7 @@
 
 namespace blacksenator;
 
-//use blacksenator\fritzsoap\fritzsoap;
 use blacksenator\callrouter\callrouter;
-use \SimpleXMLElement;
 
 function callRouter($config)
 {
@@ -14,43 +12,55 @@ function callRouter($config)
     $callrouter = new callrouter($config);
     // get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
     $fbSocket = $callrouter->getSocket();
-    if (strpos($callrouter->phonebookList, $whitelist) === false) {
-        $message = sprintf('The phonebook #%s (whitelist) is not available!', $whitelist);
-        error_log($message);
+    if (strpos($callrouter->getPhonebookList(), $whitelist) === false) {
+        $message = sprintf('The phonebook #%s (whitelist) does not exist on the FRITZ!Box!', $whitelist);
+        exit($message);
     } else {
-        $callrouter->getCurrentData($whitelist);            // initial load current phonebook
+        $callrouter->getCurrentData((int)$whitelist);            // initial load current phonebook
     }
-    if (strpos($callrouter->phonebookList, $blacklist) === false) {
-        $message = sprintf('The phonebook #%s (blacklist) is not available!', $blacklist);
-        error_log($message);
+    if (strpos($callrouter->getPhonebookList(), $blacklist) === false) {
+        $message = sprintf('The phonebook #%s (blacklist) does not exist on the FRITZ!Box!', $blacklist);
+        exit($message);
     }
 
     // now listen to the callmonitor and wait for new lines
-    echo 'Cocked and unlocked...' . PHP_EOL;
+    echo 'On guard...' . PHP_EOL;
     $callrouter->setLogging('Program started. Listen to call monitor.');
     while(true) {
         $newLine = fgets($fbSocket);
         if($newLine != null) {
-            $values = explode(';', $newLine);                               // [DATE TIME];[STATUS];[0];[NUMBER];;;
-            if ($values[1] == 'RING') {                                     // incomming call
-                $number = $values[3];                                       // caller number
-                $message = sprintf('Call from number %s to MSN %s', $number, $values[4]);
+            $foreign = false;
+            $values = $callrouter->parseCallString($newLine);           // [timestamp];[type];[conID];[extern];[intern];[device];
+            if ($values['type'] == 'RING') {                            // incomming call
+                $number = $values['extern'];                            // caller number
+                if (substr($number, 0, 2) === '00') {
+                    $foreign = true;
+                }
+                $realName = $config['caller'];
+                if ($config['timestamp']) {
+                    $realName = $realName . ' (' . $values['timestamp'] . ')';
+                }
+                $message = sprintf('Call from number %s to MSN %s', $number, $values['intern']);
                 $callrouter->setLogging($message);
-                // step 1: check if number is known (in phonebook included)
+                // wash cycle 1:
+                // check if number is known (in phonebook included)
                 if (in_array($number, $callrouter->currentNumbers)) {
                     $message = sprintf('Number %s found in phonebook #%s', $number, $whitelist);
                     $callrouter->setLogging($message);
-                // step 2: put a foreign number on blacklist
-                } elseif ($config['blockForeign'] && substr($number, 0, 2) === '00') {
-                    $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                // wash cycle 2:
+                // put a foreign number on blacklist if blockForeign is set
+                } elseif ($foreign && $config['blockForeign']) {
+                    $callrouter->setContact($realName, $number, $config['type'], $blacklist);
                     $message = sprintf('Foreign number! Added to spam phonebook #%s', $blacklist);
                     $callrouter->setLogging($message);
-                // step 3: put domestic numbers with invalid area code on blacklist
-                } elseif (!$callrouter->getArea($number) && !substr($number, 0, 2) === '00') {
-                    $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                // wash cycle 3:
+                // put domestic numbers with faked area code on blacklist
+                } elseif (!$foreign && !$callrouter->getArea($number)) {
+                    $callrouter->setContact($realName, $number, $config['type'], $blacklist);
                     $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $blacklist);
                     $callrouter->setLogging($message);
-                // step 4: try to get a rating
+                // wash cycle 4:
+                // try to get a rating from tellows
                 } else {
                     $result = $callrouter->getRating($number);
                     if (!$result) {                                     // request returned false
@@ -58,7 +68,7 @@ function callRouter($config)
                     } else {
                         // if rating (score & comments) is equal or above settings put on blacklist
                         if (($result['score'] >= $config['score']) && ($result['comments'] >= $config['comments'])) {
-                            $callrouter->setContact($config['caller'], $number, $config['type'], $blacklist);
+                            $callrouter->setContact($realName, $number, $config['type'], $blacklist);
                             $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $result['score'], $result['comments'], $blacklist);
                             $callrouter->setLogging($message);
                         } else {                                        // positiv or indifferent reputation
@@ -68,7 +78,7 @@ function callRouter($config)
                     }
                 }
             }
-            if ($values[1] == 'DISCONNECT') {
+            if ($values['type'] == 'DISCONNECT') {
                 $callrouter->setLogging('Disconnected');
             }
         } else {
@@ -77,7 +87,7 @@ function callRouter($config)
         // refresh
         $currentTime = time();
         if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 864000))) {
-            $callrouter->getCurrentData($whitelist);
+            $callrouter->getCurrentData((int)$whitelist);
         }
     }
 }

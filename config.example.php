@@ -11,6 +11,7 @@ $config = [
     'score'        => 6,                    // must be above 5 (neutral); increase the value to be less sensitive (max. 9)
     'comments'     => 3,                    // should be above 3 decrease the value to be less sensitive (min. 0)
     'caller'       => 'autom. gesperrt',    // alias for new unknown caller
+    'timestamp'    => true,                 // adding timestamp to the caller: "[caller] ([timestamp])"
     'type'         => 'default',            // type of phone line (home, work, mobil, fax etc.); 'default' = 'sonstige'
     'logging'      => true,
     'loggingPath'  => '',                   // were callrouter_logging.txt schould be saved (default value is = './')
