@@ -276,7 +276,7 @@ class callrouter
     {
         $line = str_replace(';\\r\\n', '', $line);      // eliminate CR
         @list(
-            $moment,
+            $timestamp,
             $type,
             $conID,
             $extern,
@@ -285,7 +285,7 @@ class callrouter
         ) = explode(';', $line);
 
         return [
-            'timestamp' => $moment,
+            'timestamp' => $timestamp,
             'type' => $type,
             'conID' => $conID,
             'extern' => $extern,

@@ -32,7 +32,11 @@ function callRouter($config)
             $foreign = false;
             $values = $callrouter->parseCallString($newLine);           // [timestamp];[type];[conID];[extern];[intern];[device];
             if ($values['type'] == 'RING') {                            // incomming call
-                $number = $values['extern'];                            // caller number
+                if (empty($values['extern'])) {
+                    $number = 'unknown';
+                } else {
+                    $number = $values['extern'];                         // caller number
+                }
                 if (substr($number, 0, 2) === '00') {
                     $foreign = true;
                 }
@@ -43,23 +47,28 @@ function callRouter($config)
                 $message = sprintf('Call from number %s to MSN %s', $number, $values['intern']);
                 $callrouter->setLogging($message);
                 // wash cycle 1:
-                // check if number is known (in phonebook included)
-                if (in_array($number, $callrouter->currentNumbers)) {
-                    $message = sprintf('Number %s found in phonebook #%s', $number, $whitelist);
+                // skip unknown
+                if ($number == 'unknown') {
+                    $message = 'Caller uses CLIR - no action possible';
                     $callrouter->setLogging($message);
                 // wash cycle 2:
+                // check if number is known (in phonebook included)
+                } elseif (in_array($number, $callrouter->currentNumbers)) {
+                    $message = sprintf('Number %s found in phonebook #%s', $number, $whitelist);
+                    $callrouter->setLogging($message);
+                // wash cycle 3:
                 // put a foreign number on blacklist if blockForeign is set
                 } elseif ($foreign && $config['blockForeign']) {
                     $callrouter->setContact($realName, $number, $config['type'], $blacklist);
                     $message = sprintf('Foreign number! Added to spam phonebook #%s', $blacklist);
                     $callrouter->setLogging($message);
-                // wash cycle 3:
+                // wash cycle 4:
                 // put domestic numbers with faked area code on blacklist
                 } elseif (!$foreign && !$callrouter->getArea($number)) {
                     $callrouter->setContact($realName, $number, $config['type'], $blacklist);
                     $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $blacklist);
                     $callrouter->setLogging($message);
-                // wash cycle 4:
+                // wash cycle 5:
                 // try to get a rating from tellows
                 } else {
                     $result = $callrouter->getRating($number);
