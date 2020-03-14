@@ -87,6 +87,16 @@ class callrouter
     }
 
     /**
+     * get a fresh client with new SID
+     *
+     * return void
+     */
+    public function refreshClient ()
+    {
+        $this->fritzbox->getClient();
+    }
+
+    /**
      * get the FRITZ!Box callmonitor socket
      *
      * @return resource|bool $socket

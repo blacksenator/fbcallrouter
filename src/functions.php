@@ -96,6 +96,7 @@ function callRouter($config)
         // refresh
         $currentTime = time();
         if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 864000))) {
+            $callrouter->refreshClient();
             $callrouter->getCurrentData((int)$whitelist);
         }
     }
