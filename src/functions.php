@@ -86,9 +86,8 @@ function callRouter($config)
                         }
                     }
                 }
-            }
-            if ($values['type'] == 'DISCONNECT') {
-                $callrouter->setLogging('Disconnected');
+            } else {
+                $callrouter->setLogging($values['type']);
             }
         } else {
             sleep(1);
