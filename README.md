@@ -25,7 +25,7 @@ If you set `'logging'` and the `'loggingPath'` is valid, the essential process s
 
 ## Requirements
 
-* PHP >= 7.0
+* PHP >= 7.0 (php-cli, php-curl php-mbstring, php-soap, php-xml)
 * callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
 * Composer (follow the installation guide at https://getcomposer.org/download/)
 
@@ -43,7 +43,7 @@ cd fbcallrouter
 Install composer (see https://getcomposer.org/download/ for newer instructions):
 
 ```console
-composer install --no-dev
+composer install --no-dev --no-suggest
 ```
 
 Edit `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
@@ -75,9 +75,11 @@ Otherwise: it is not a foreign number, the ONB/RNB is correct and you certainly 
 If you do not receive an error message, then at least all the wash cycles have been run through once.
 To cancel, press CTRL+C.
 
+If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
+
 ### Permanent background processing:
 
-a) edit `user=` in `fbcallrouter.service` with your device user (e.g. `pi`)  and save the file
+a) edit `[youruser]` in `fbcallrouter.service` with your device user (e.g. `pi`) and save the file
 
 ```console
 nano fbcallrouter.service
@@ -107,4 +109,4 @@ This script is released under MIT license.
 
 ## Author
 
-Copyright (c) 2019 Volker Püschel
+Copyright (c) 2019 2020 Volker Püschel

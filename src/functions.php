@@ -44,7 +44,7 @@ function callRouter($config)
                 if ($config['timestamp']) {
                     $realName = $realName . ' (' . $values['timestamp'] . ')';
                 }
-                $message = sprintf('Call from number %s to MSN %s', $number, $values['intern']);
+                $message = sprintf('CALL IN from number %s to MSN %s', $number, $values['intern']);
                 $callrouter->setLogging($message);
                 // wash cycle 1:
                 // skip unknown
@@ -87,7 +87,8 @@ function callRouter($config)
                     }
                 }
             } else {
-                $callrouter->setLogging($values['type']);
+                $type = $values['type'] == 'CALL' ? 'CALL OUT' : $values['type'];
+                $callrouter->setLogging($type);
             }
         } else {
             sleep(1);
