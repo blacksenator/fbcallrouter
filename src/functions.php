@@ -6,6 +6,7 @@ use blacksenator\callrouter\callrouter;
 
 function callRouter($config)
 {
+    ini_set("default_socket_timeout", 1);                   // setting low during script execution
     $whitelist = (string)$config['whitelist'];
     $blacklist = (string)$config['blacklist'];
     date_default_timezone_set("Europe/Berlin");
@@ -95,9 +96,10 @@ function callRouter($config)
         }
         // refresh
         $currentTime = time();
-        if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 864000))) {
+        if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 86400))) {
             $callrouter->refreshClient();
             $callrouter->getCurrentData((int)$whitelist);
+            $callrouter->setLogging('Phonebook (whitelist) refreshed');
         }
     }
 }
