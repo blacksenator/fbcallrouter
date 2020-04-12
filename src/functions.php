@@ -6,7 +6,7 @@ use blacksenator\callrouter\callrouter;
 
 function callRouter($config)
 {
-    ini_set("default_socket_timeout", 1);                   // setting low during script execution
+    ini_set("default_socket_timeout", $config['socket_timeout']);   // setting low during script execution
     $whitelist = (string)$config['whitelist'];
     $blacklist = (string)$config['blacklist'];
     date_default_timezone_set("Europe/Berlin");
