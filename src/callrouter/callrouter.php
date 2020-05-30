@@ -57,7 +57,7 @@ class callrouter
 
     public $currentNumbers = [];
     public $areaCodes = [];
-    public $lastupdate;
+    public $update = 0;
 
     private $fritzbox;                                      // SOAP client
     private $url = [];                                      // url components as array
@@ -138,8 +138,8 @@ class callrouter
             if (count($numbers) == 0) {
                 exit('The phone book against which you want to check is empty!');
             } else {
-                $this->lastupdate = time();
                 $this->currentNumbers = $numbers;
+                $this->update = time();
             }
         }
     }

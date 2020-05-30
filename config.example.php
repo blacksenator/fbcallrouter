@@ -1,7 +1,6 @@
 <?php
 
 $config = [
-    'socket_timeout' => 2,                  // if queries are fail, set higher; php default is 60
     'url'            => 'fritz.box',        // your Fritz!Box IP (or set '192.168.178.1' or ...)
     'user'           => 'dslf_config',      // your Fritz!Box user ('dslf_config' is the standard TR-064 user)
     'password'       => 'xxxxxxxxx',        // your Fritz!Box user password

@@ -5,29 +5,30 @@ namespace blacksenator;
 use blacksenator\callrouter\callrouter;
 
 function callRouter($config)
-{
-    ini_set("default_socket_timeout", $config['socket_timeout']);   // setting low during script execution
+{   $elapse = $config['refresh'] <= 0 ? 86400 : $config['refresh'] * 86400;
     $whitelist = (string)$config['whitelist'];
     $blacklist = (string)$config['blacklist'];
     date_default_timezone_set("Europe/Berlin");
     $callrouter = new callrouter($config);
-    // get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
-    $fbSocket = $callrouter->getSocket();
+    // load phonebooks
     if (strpos($callrouter->getPhonebookList(), $whitelist) === false) {
         $message = sprintf('The phonebook #%s (whitelist) does not exist on the FRITZ!Box!', $whitelist);
         exit($message);
     } else {
         $callrouter->getCurrentData((int)$whitelist);            // initial load current phonebook
+        $update = $callrouter->update + $elapse;
     }
     if (strpos($callrouter->getPhonebookList(), $blacklist) === false) {
         $message = sprintf('The phonebook #%s (blacklist) does not exist on the FRITZ!Box!', $blacklist);
         exit($message);
     }
-
+    // get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
+    $fbSocket = $callrouter->getSocket();
+    stream_set_timeout ($fbSocket, 1);
     // now listen to the callmonitor and wait for new lines
     echo 'On guard...' . PHP_EOL;
     $callrouter->setLogging('Program started. Listen to call monitor.');
-    while(true) {
+    while(true) {           //
         $newLine = fgets($fbSocket);
         if($newLine != null) {
             $foreign = false;
@@ -91,14 +92,13 @@ function callRouter($config)
                 $type = $values['type'] == 'CALL' ? 'CALL OUT' : $values['type'];
                 $callrouter->setLogging($type);
             }
-        } else {
-            sleep(1);
         }
         // refresh
         $currentTime = time();
-        if ($currentTime > ($callrouter->lastupdate + ($config['refresh'] * 86400))) {
+        if ($currentTime > $update) {
             $callrouter->refreshClient();
             $callrouter->getCurrentData((int)$whitelist);
+            $update = $callrouter->update + $elapse;
             $callrouter->setLogging('Phonebook (whitelist) refreshed');
         }
     }
