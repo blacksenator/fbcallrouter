@@ -5,7 +5,9 @@ namespace blacksenator;
 use blacksenator\callrouter\callrouter;
 
 function callRouter($config)
-{   $elapse = $config['refresh'] <= 0 ? 86400 : $config['refresh'] * 86400;
+{
+    $nextUpdate = 0;
+    $elapse = $config['refresh'] <= 0 ? 86400 : $config['refresh'] * 86400;
     $whitelist = (string)$config['whitelist'];
     $blacklist = (string)$config['blacklist'];
     date_default_timezone_set("Europe/Berlin");
@@ -16,7 +18,10 @@ function callRouter($config)
         exit($message);
     } else {
         $callrouter->getCurrentData((int)$whitelist);            // initial load current phonebook
-        $update = $callrouter->update + $elapse;
+        $nextUpdate = $callrouter->getLastUpdate() + $elapse;
+        $time = date('d.m.Y H:i:s', $nextUpdate);
+        $message = sprintf('Initialization: phonebook (whitelist) loaded; next refresh: %s', $time);
+        $callrouter->setLogging($message);
     }
     if (strpos($callrouter->getPhonebookList(), $blacklist) === false) {
         $message = sprintf('The phonebook #%s (blacklist) does not exist on the FRITZ!Box!', $blacklist);
@@ -27,7 +32,7 @@ function callRouter($config)
     stream_set_timeout ($fbSocket, 1);
     // now listen to the callmonitor and wait for new lines
     echo 'On guard...' . PHP_EOL;
-    $callrouter->setLogging('Program started. Listen to call monitor.');
+    $callrouter->setLogging('Guarding started: listen to FRITZ!Box call monitor.');
     while(true) {           //
         $newLine = fgets($fbSocket);
         if($newLine != null) {
@@ -92,14 +97,18 @@ function callRouter($config)
                 $type = $values['type'] == 'CALL' ? 'CALL OUT' : $values['type'];
                 $callrouter->setLogging($type);
             }
+        } else {
+            sleep(1);
         }
         // refresh
         $currentTime = time();
-        if ($currentTime > $update) {
+        if ($currentTime > $nextUpdate) {
             $callrouter->refreshClient();
             $callrouter->getCurrentData((int)$whitelist);
-            $update = $callrouter->update + $elapse;
-            $callrouter->setLogging('Phonebook (whitelist) refreshed');
+            $nextUpdate = $callrouter->getLastUpdate() + $elapse;
+            $time = date('d.m.Y H:i:s', $nextUpdate);
+            $message = sprintf('Phonebook (whitelist) refreshed; next refresh: %s', $time);
+            $callrouter->setLogging($message);
         }
     }
 }

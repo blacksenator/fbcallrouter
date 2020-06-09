@@ -57,11 +57,11 @@ class callrouter
 
     public $currentNumbers = [];
     public $areaCodes = [];
-    public $update = 0;
 
     private $fritzbox;                                      // SOAP client
     private $url = [];                                      // url components as array
     private $phonebookList;
+    private $update = 0;
     private $logging = false;
     private $loggingPath = '';
 
@@ -124,12 +124,22 @@ class callrouter
     }
 
     /**
+     * get the time of the last update
+     *
+     * @return string $update
+     */
+    public function getLastUpdate()
+    {
+        return $this->update;
+    }
+
+    /**
      * get current data from FRITZ!Box
      *
      * @param int $phonebookID
      * @return void
      */
-    function getCurrentData(int $phonebookID = 0)
+    public function getCurrentData(int $phonebookID = 0)
     {
         $numbers = [];
         $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
