@@ -288,6 +288,7 @@ class callrouter
     /**
      * parse a string from callmonitor socket output
      * e.g.: "01.01.20 10:10:10;RING;0;01701234567;987654;SIP0;\r\n"
+     * or with less parameters: "18.11.12 00:13:26;DISCONNECT;0;0;\r\n"
      *
      * @param string $line
      * @return array $result
@@ -295,22 +296,15 @@ class callrouter
     public function parseCallString(string $line): array
     {
         $line = str_replace(';\\r\\n', '', $line);      // eliminate CR
-        @list(
-            $timestamp,
-            $type,
-            $conID,
-            $extern,
-            $intern,
-            $device,
-        ) = explode(';', $line);
+        $params = explode(';', $line);
 
         return [
-            'timestamp' => $timestamp,
-            'type' => $type,
-            'conID' => $conID,
-            'extern' => $extern,
-            'intern' => $intern,
-            'device' => $device,
+            'timestamp' => $params[0],
+            'type' => $params[1],
+            'conID' => $params[2],
+            'extern' => $params[3],
+            'intern' => (isset($params[4])) ? $params[4] : "",
+            'device' => (isset($params[5])) ? $params[5] : ""
         ];
     }
 }
