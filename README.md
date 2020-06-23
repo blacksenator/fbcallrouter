@@ -17,7 +17,7 @@ For an incoming call a cascaded check takes place:
 The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect.
 But if the score is proven bad according to your settings, the number will be transferred to the corresponding phonebook (spam) for future rejections.
 
-If you set `'logging'` and the `'loggingPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'loggingPath'` is empty the programm directory is default.
+If you set `'log'` in your config and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
 
 *ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** (Vorwahlverzeichnis). Unpack the archive (if necessary in the archive) and save the file as `ONB.csv` in the `./assets` directory.
 
@@ -27,7 +27,7 @@ If you set `'logging'` and the `'loggingPath'` is valid, the essential process s
 
 * PHP >= 7.0 (php-cli, php-curl php-mbstring, php-soap, php-xml)
 * callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
-* Composer (follow the installation guide at https://getcomposer.org/download/)
+* Composer (follow the installation guide at <https://getcomposer.org/download/)>
 
 ## Installation
 
@@ -40,7 +40,7 @@ git clone https://github.com/blacksenator/fbcallrouter.git
 cd fbcallrouter
 ```
 
-Install composer (see https://getcomposer.org/download/ for newer instructions):
+Install composer (see <https://getcomposer.org/download/> for newer instructions):
 
 ```console
 composer install --no-dev --no-suggest
@@ -61,7 +61,9 @@ The programm accessed the Fritz!Box via TR-064. Make sure that your user is gran
 
 ## Usage
 
-### Test:
+### Test
+
+#### Function test
 
 ```console
 php fbcallrouter run
@@ -69,15 +71,34 @@ php fbcallrouter run
 
 If `On guard...` appears, the program is armed.
 
-Make a function test in which you e.g. call your landline from your mobile phone: your mobile phone number **should not** end up in the spam phone book!
+Make a function test in which you call your landline from your cell phone: your mobile phone number **should not** end up in the spam phone book!
 If the number is in your phone book, nothing should happen anyway (on whitelist).
-Otherwise: it is not a foreign number, the ONB/RNB is correct and you certainly do not have a bad entry in tellows.
+Otherwise: your mobile phone number is not a foreign number, the ONB/RNB is correct and you certainly do not have a bad entry in tellows. Therefore these tests should not lead to any sorting out.
 If you do not receive an error message, then at least all the wash cycles have been run through once.
 To cancel, press CTRL+C.
 
 If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
 
-### Permanent background processing:
+#### Integration test
+
+There are four exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
+
+```console
+php fbcallrouter run -t
+```
+
+It is highly recommended to proceed like this: call your landline from your celluar phone, the incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output:
+
+```console
+Running test case 1/4
+```
+
+So you have to call as many times as there are numbers in the array to check all test cases. The program then ends this number replacement.
+
+Check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
+To cancel, press CTRL+C.
+
+### Permanent background processing
 
 a) edit `[youruser]` in `fbcallrouter.service` with your device user (e.g. `pi`) and save the file
 

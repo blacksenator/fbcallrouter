@@ -62,28 +62,21 @@ class callrouter
     private $url = [];                                      // url components as array
     private $phonebookList;
     private $update = 0;
-    private $logging = false;
     private $loggingPath = '';
 
     /**
-     * @param array $config
+     * @param array $fritzbox
+     * @param array $logging
      * @return void
      */
-    public function __construct($config)
+    public function __construct($fritzbox, $loggingPath)
     {
-        $this->fritzbox = new x_contact($config['url'], $config['user'], $config['password']);
+        $this->fritzbox = new x_contact($fritzbox['url'], $fritzbox['user'], $fritzbox['password']);
         $this->url = $this->fritzbox->getURL();
         $this->fritzbox->getClient();
         $this->phonebookList = $this->fritzbox->getPhonebookList();
         $this->getAreaCodes();
-        if ($config['logging']) {
-            $this->logging = true;
-            if (isset($config['loggingPath']) && (!empty($config['loggingPath']))) {
-                $this->loggingPath = $config['loggingPath'];
-            } else {
-                $this->loggingPath = dirname(__DIR__, 2);
-            }
-        }
+        $this->loggingPath = empty($loggingPath) ? dirname(__DIR__, 2)  : $loggingPath;
     }
 
     /**
@@ -99,18 +92,22 @@ class callrouter
     /**
      * get the FRITZ!Box callmonitor socket
      *
-     * @return resource|bool $socket
+     * @param int $timeout
+     * @return resource $socket
      */
-    public function getSocket()
+    public function getSocket(int $timeout = 1)
     {
-        $adress = $this->url['host'] . ':' . self::CALLMONITORPORT;
-        $socket = stream_socket_client($adress, $errno, $errstr);
-            if (!$socket) {
-                error_log(sprintf("Could not listen to callmonitor! Error: %s (%s)!", $errstr, $errno));
-                return false;
-            }
+        $adress = 'tcp://' . $this->url['host'] . ':' . self::CALLMONITORPORT;
+        $stream = stream_socket_client($adress, $errno, $errstr);
+        if (!$stream) {
+            $message = sprintf("Can't reach the callmonitor port! Error: %s (%s)!", $errstr, $errno);
+            throw new \Exception($message);
+        }
+        $socket = socket_import_stream($stream);
+        socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);
+        stream_set_timeout ($stream, $timeout);
 
-        return $socket;
+        return $stream;
     }
 
     /**
@@ -268,21 +265,19 @@ class callrouter
         // assamble minimal contact structure
         $spamContact = $this->fritzbox->newContact($name, $number, $type);
         // add the spam call as new phonebook entry
-        $this->fritzbox->setPhonebookEntry($spamContact, $phonebook);
+        $result = $this->fritzbox->setPhonebookEntry($spamContact, $phonebook);
     }
 
     /**
-     * set logging info
+     * write logging info
      *
      * @param string $info
      * @return void
      */
-    public function setLogging ($info)
+    public function writeLogging ($info)
     {
-        if ($this->logging) {
-            $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
-            file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
-        }
+        $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
+        file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
     }
 
     /**
@@ -307,4 +302,20 @@ class callrouter
             'device' => (isset($params[5])) ? $params[5] : ""
         ];
     }
+
+    /**
+     * sanitize an phone numer string
+     *
+     * @param string $number
+     * @return string $number
+     */
+    public function sanitizeNumber (string $number): string
+    {
+        if (substr($number, 0, 1) === '+') {                            // if foreign number starts with +
+            $number = '00' . substr($number, 1, strlen($number) - 1);   // it will be replaced with 00
+        }
+
+        return preg_replace("/[^0-9]/","",$number);                     // only digits
+    }
+
 }

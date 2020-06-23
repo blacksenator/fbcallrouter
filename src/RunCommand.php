@@ -3,6 +3,8 @@
 namespace blacksenator;
 
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -13,7 +15,8 @@ class RunCommand extends Command
     protected function configure()
     {
         $this->setName('run')
-            ->setDescription('perpetual');
+            ->setDescription('perpetual')
+            ->addOption('test', 't', InputOption::VALUE_NONE, 'test number(s)');
 
         $this->addConfig();
     }
@@ -22,6 +25,10 @@ class RunCommand extends Command
     {
         $this->loadConfig($input);
         error_log('Starting FRITZ!Box call router...');
-        callRouter($this->config);
+        $testNumbers = [];
+        if ($input->getOption('test')) {
+            $testNumbers = $this->config['test']['numbers'] ?? [];
+        }
+        callRouter($this->config, $testNumbers);
     }
 }
