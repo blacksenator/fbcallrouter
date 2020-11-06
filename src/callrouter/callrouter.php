@@ -4,7 +4,7 @@ namespace blacksenator\callrouter;
 
 /* class callrouter
  *
- * Copyright (c) 2019 Volker Püschel
+ * Copyright (c) 2019 2020 Volker Püschel
  * @license MIT
  */
 
@@ -55,14 +55,11 @@ class callrouter
                 '179'   => 'Telefónica',
             ];
 
-    public $currentNumbers = [];
-    public $areaCodes = [];
-
     private $fritzbox;                                      // SOAP client
     private $url = [];                                      // url components as array
     private $phonebookList;
-    private $update = 0;
     private $loggingPath = '';
+    private $areaCodes = [];
 
     /**
      * @param array $fritzbox
@@ -121,34 +118,20 @@ class callrouter
     }
 
     /**
-     * get the time of the last update
-     *
-     * @return string $update
-     */
-    public function getLastUpdate()
-    {
-        return $this->update;
-    }
-
-    /**
-     * get current data from FRITZ!Box
+     * get phonebook
      *
      * @param int $phonebookID
-     * @return void
+     * @return array
      */
-    public function getCurrentData(int $phonebookID = 0)
+    public function getPhoneNumbers(int $phonebookID = 0)
     {
         $numbers = [];
         $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
         if ($phoneBook != false) {
             $numbers = $this->getNumbers((object)$phoneBook);
-            if (count($numbers) == 0) {
-                exit('The phone book against which you want to check is empty!');
-            } else {
-                $this->currentNumbers = $numbers;
-                $this->update = time();
-            }
         }
+
+        return $numbers;
     }
 
     /**

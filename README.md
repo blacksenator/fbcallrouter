@@ -1,9 +1,19 @@
 # An extended call routing for AVM FRITZ!Box
 
+<img align="right" src="assets/washing.png"/>
+
 The programm is trying to identify spam calls. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
 
-**You need to have a separate spam telefon book beside your phonebook!
-The program only works in the German telephone network!**
+## Release note
+
+This version uses a **configuration file with a modified structure** (see config.example.php)!
+
+## Preconditions
+
+* You need to have a separate spam telefon book beside your phonebook!
+* The program only works in the German telephone network!
+
+## Description
 
 For an incoming call a cascaded check takes place:
 
@@ -25,7 +35,7 @@ If you set `'log'` in your config and the `'logPath'` is valid, the essential pr
 
 ## Requirements
 
-* PHP >= 7.0 (php-cli, php-curl php-mbstring, php-soap, php-xml)
+* PHP >= 7.0 (php-cli, php-curl, php-mbstring, php-soap, php-xml)
 * callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
 * Composer (follow the installation guide at <https://getcomposer.org/download/)>
 
@@ -75,7 +85,7 @@ Make a function test in which you call your landline from your cell phone: your 
 If the number is in your phone book, nothing should happen anyway (on whitelist).
 Otherwise: your mobile phone number is not a foreign number, the ONB/RNB is correct and you certainly do not have a bad entry in tellows. Therefore these tests should not lead to any sorting out.
 If you do not receive an error message, then at least all the wash cycles have been run through once.
-To cancel, press CTRL+C.
+To cancel, press `CTRL+C`.
 
 If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
 
@@ -87,16 +97,16 @@ There are four exemplary `'numbers'` stored in the configuration file with which
 php fbcallrouter run -t
 ```
 
-It is highly recommended to proceed like this: call your landline from your celluar phone, the incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output:
+It is highly recommended to proceed like this: use your celluar phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. **But it´s necessary that during this test your mobil phone number is NOT in your whitelist telephone book! If so, you have to delete it (temporarily) to run this test.** If your calling your landline number additional information is output like this:
 
 ```console
 Running test case 1/4
 ```
 
-So you have to call as many times as there are numbers in the array to check all test cases. The program then ends this number replacement.
+So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
 
 Check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
-To cancel, press CTRL+C.
+To cancel, press `CTRL+C`.
 
 ### Permanent background processing
 

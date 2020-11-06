@@ -3,7 +3,6 @@
 namespace blacksenator;
 
 use blacksenator\callrouter\callrouter;
-// use blacksenator\fritzsoap\fritzbox;
 
 define('ONEDAY', 86400);
 define('TWOHRS', 7200);
@@ -21,6 +20,8 @@ function callRouter(array $config, array $testNumbers = [])
     $elapse = $phonebook['refresh'] < 1 ? ONEDAY : $phonebook['refresh'] * ONEDAY;     // sec to next whitelist refresh
     $whitelist = (string)$phonebook['whitelist'];
     $blacklist = (string)$phonebook['blacklist'];
+    $whiteNumbers = [];
+    $blackNumbers = [];
     $nextUpdate = 0;
     $nextRefresh = 0;
     $testCases = count($testNumbers);
@@ -31,13 +32,15 @@ function callRouter(array $config, array $testNumbers = [])
         $message = sprintf('The phonebook #%s (whitelist) does not exist on the FRITZ!Box!', $whitelist);
         throw new \Exception($message);
     } else {
-        $callrouter->getCurrentData((int)$whitelist);            // initial load current phonebook
-        $nextUpdate = $callrouter->getLastUpdate() + $elapse;
+        $whiteNumbers = $callrouter->getPhoneNumbers((int)$whitelist);
+        $nextUpdate = time() + $elapse;
         setLogging($callrouter, $log, 1, [date('d.m.Y H:i:s', $nextUpdate)]);
     }
     if (strpos($callrouter->getPhonebookList(), $blacklist) === false) {
         $message = sprintf('The phonebook #%s (blacklist) does not exist on the FRITZ!Box!', $blacklist);
         throw new \Exception($message);
+    } else {
+        $blackNumbers = $callrouter->getPhoneNumbers((int)$blacklist);
     }
 
     // get socket to FRITZ!Box callmonitor port (in a case of error dial #96*5* to open it)
@@ -86,7 +89,7 @@ function callRouter(array $config, array $testNumbers = [])
                     setLogging($callrouter, $log, 0, ['Caller uses CLIR - no action possible']);
                 // wash cycle 2:
                 // check if number is known (in phonebook included)
-                } elseif (in_array($number, $callrouter->currentNumbers)) {
+                } elseif (in_array($number, $whiteNumbers)) {
                     setLogging($callrouter, $log, 3, [$number, $whitelist]);
                 // wash cycle 3:
                 // skip local number
@@ -94,16 +97,20 @@ function callRouter(array $config, array $testNumbers = [])
                     setLogging($callrouter, $log, 0, ['No "0" as Perfix. No action possible']);
                 // wash cycle 4:
                 // put a foreign number on blacklist if blockForeign is set
-                } elseif ($foreign && $filter['blockForeign']) {
+                } elseif ($foreign && $filter['blockForeign']
+                        && (!in_array($number, $blackNumbers))) {
                     $callrouter->refreshClient();
                     $callrouter->setContact($realName, $number, $contact['type'], $blacklist);
                     setLogging($callrouter, $log, 4, [$blacklist]);
-                    // wash cycle 5:
+                    $blackNumbers = $callrouter->getPhoneNumbers((int)$blacklist);
+                // wash cycle 5:
                 // put domestic numbers with faked area code on blacklist
-                } elseif (!$foreign && !$callrouter->getArea($number)) {
+                } elseif (!$foreign && !$callrouter->getArea($number)
+                        && (!in_array($number, $blackNumbers))) {
                     $callrouter->refreshClient();
                     $callrouter->setContact($realName, $number, $contact['type'], $blacklist);
                     setLogging($callrouter, $log, 5, [$blacklist]);
+                    $blackNumbers = $callrouter->getPhoneNumbers((int)$blacklist);
                 // wash cycle 6:
                 // try to get a rating from tellows
                 } else {
@@ -114,10 +121,12 @@ function callRouter(array $config, array $testNumbers = [])
                         $numberScore = $result['score'];
                         $numberComments = $result['comments'];
                         // if rating (score & comments) is equal or above settings put on blacklist
-                        if (($numberScore >= $filter['score']) && ($numberComments >= $filter['comments'])) {
+                        if (($numberScore >= $filter['score']) && ($numberComments >= $filter['comments'])
+                                && (!in_array($number, $blackNumbers))) {
                             $callrouter->refreshClient();
                             $callrouter->setContact($realName, $number, $contact['type'], $blacklist);
                             setLogging($callrouter, $log, 6, [$numberScore, $numberComments, $blacklist]);
+                            $blackNumbers = $callrouter->getPhoneNumbers((int)$blacklist);
                         } else {                                        // positiv or indifferent reputation
                             setLogging($callrouter, $log, 7, [$numberScore, $numberComments]);
                         }
@@ -142,8 +151,8 @@ function callRouter(array $config, array $testNumbers = [])
             // refresh whitelist if necessary
             if (time() > $nextUpdate) {
                 $callrouter->refreshClient();
-                $callrouter->getCurrentData((int)$whitelist);
-                $nextUpdate = $callrouter->getLastUpdate() + $elapse;
+                $whiteNumbers = $callrouter->getPhoneNumbers((int)$whitelist);
+                $nextUpdate = time() + $elapse;
                 $time = date('d.m.Y H:i:s', $nextUpdate);
                 setLogging($callrouter, $log, 8, [$time]);
             }
