@@ -2,7 +2,7 @@
 
 <img align="right" src="assets/washing.png"/>
 
-The programm is trying to identify spam calls. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
+The program is trying to identify spam calls. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
 
 ## Release note
 
@@ -17,13 +17,15 @@ This version uses a **configuration file with a modified structure** (see config
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is already known in one of your telephone books (`'whitelist'`).
+* First, it is checked, whether the number is already known in one of your telephone books (`'whitelist'`) Even known spam numbers (`'blacklist'`) are not analyzed any further.
 
 * If not, than it is checked if it is a foreign number. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
 * Than it is checked if a domestic number has a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
-* If all this passed, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score (six to ten) and at least more than three comments. You can adapt the values in the configuration file.
+* After that it is checked if the subribers number is valid or starting with a zero (only applies to landline numbers). If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+
+* If all this passed, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score (six to nine) and at least more than three comments. You can adapt the values in the configuration file.
 The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect.
 But if the score is proven bad according to your settings, the number will be transferred to the corresponding phonebook (spam) for future rejections.
 
@@ -57,11 +59,6 @@ composer install --no-dev --no-suggest
 ```
 
 Edit `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
-The least essential adaptation is setting your FRITZ!Box password:
-
-```PHP
-'password'     => 'xxxxxxxxx',         // your Fritz!Box user password
-```
 
 ### Preconditions on the FRITZ!Box
 
@@ -91,16 +88,22 @@ If logging is enabled, than `nano callrouter_logging.txt` will show you what hap
 
 #### Integration test
 
-There are four exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
+There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
 
 ```console
 php fbcallrouter run -t
 ```
 
-It is highly recommended to proceed like this: use your celluar phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. **But it´s necessary that during this test your mobil phone number is NOT in your whitelist telephone book! If so, you have to delete it (temporarily) to run this test.** If your calling your landline number additional information is output like this:
+It is highly recommended to proceed like this:
+
+1. check if none of the substitutes are allready in your phonebook (especially if they repeat the test)!
+2. if you want to provoke a tellows query, check that the number actually has the desired score and comments
+3. use your celluar phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
 
 ```console
-Running test case 1/4
+Starting FRITZ!Box call router...
+On guard...
+Running test case 1/5
 ```
 
 So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
@@ -109,6 +112,8 @@ Check the blacklist phone book whether all numbers have been entered as expected
 To cancel, press `CTRL+C`.
 
 ### Permanent background processing
+
+The main concept of this tool is to continuously check incoming calls. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network:
 
 a) edit `[youruser]` in `fbcallrouter.service` with your device user (e.g. `pi`) and save the file
 
@@ -140,4 +145,4 @@ This script is released under MIT license.
 
 ## Author
 
-Copyright (c) 2019 2020 Volker Püschel
+Copyright© 2019 - 2021 Volker Püschel

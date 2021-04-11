@@ -2,97 +2,167 @@
 
 namespace blacksenator\callrouter;
 
-/* class callrouter
+/** class callrouter
  *
- * Copyright (c) 2019 2020 Volker Püschel
+ * A necessary source is "Vorwahlverzeichnis (VwV)"
+ * a zipped CSV from BNetzA
+ * @see: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html
+ *
+ * It is advisable to consult the above address
+ * from time to time to check if there are any changes.
+ * If so: download the ZIP-file and save the unpacked
+ * file as "ONB.csv" in ./assets
+ *
+ * Copyright (c) 2019 - 2021 Volker Püschel
  * @license MIT
  */
 
 use blacksenator\fritzsoap\x_contact;
-use SimpleXMLElement;
 
 class callrouter
 {
-    const CALLMONITORPORT = '1012';     // FRITZ!Box port for callmonitor
-    const DELIMITER = ';';  	        // delimiter in /assets/ONB.csv
-    const CELLUAR = [                   // an array of celluar network codes (RNB) according to the list of ONB
-                '1511'  => 'Telekom',   // source from: BNetzA at https://tinyurl.com/y7648pc9
-                '1512'  => 'Telekom',
-                '1514'  => 'Telekom',
-                '1515'  => 'Telekom',
-                '1516'  => 'Telekom',
-                '1517'  => 'Telekom',
-                '1520'  => 'Vodafone',
-                '1521'  => 'Vodafone/Lyca',
-                '1522'  => 'Vodafone',
-                '1523'  => 'Vodafone',
-                '1525'  => 'Vodafone',
-                '1526'  => 'Vodafone',
-                '1529'  => 'Vodafone/Truphone',
-                '15566' => 'Drillisch',
-                '15630' => 'multiConnect',
-                '15678' => 'Argon',
-                '1570'  => 'Telefónica',
-                '1573'  => 'Telefónica',
-                '1575'  => 'Telefónica',
-                '1577'  => 'Telefónica',
-                '1578'  => 'Telefónica',
-                '1579'  => 'Telefónica/SipGate',
-                '15888' => 'TelcoVillage',
-                '1590'  => 'Telefónica',
-                '160'   => 'Telekom',
-                '162'   => 'Vodafone',
-                '163'   => 'Telefónica',
-                '170'   => 'Telekom',
-                '171'   => 'Telekom',
-                '172'   => 'Vodafone',
-                '173'   => 'Vodafone',
-                '174'   => 'Vodafone',
-                '175'   => 'Telekom',
-                '176'   => 'Telefónica',
-                '177'   => 'Telefónica',
-                '178'   => 'Telefónica',
-                '179'   => 'Telefónica',
-            ];
+    const
+        CALLMONITORPORT = '1012',                       // FRITZ!Box port for callmonitor
+        ONEDAY = 86400,                                 // seconds
+        TWOHRS =  7200,                                 // seconds
+        ONB_SOURCE = '/assets/ONB.csv',                 // path to file with official area codes
+        DELIMITER = ';';                                // delimiter of ONB.csv
 
-    private $fritzbox;                                      // SOAP client
-    private $url = [];                                      // url components as array
-    private $phonebookList;
+    private $fbSocket;
+    private $nextRefresh = 0;
+    private $fritzbox;                                  // SOAP client
+    private $url = [];                                  // url components as array
+    private $prefixes = [];                             // area codes incl. mobile codes ($celluar)
+    private $celluar = [];
+    private $phonebookList = [];
+    private $nextUpdate = 0;
+    private $logging = false;
     private $loggingPath = '';
-    private $areaCodes = [];
 
     /**
-     * @param array $fritzbox
-     * @param array $logging
+     * @param array $config
+     * @param array $loggingPath
      * @return void
      */
-    public function __construct($fritzbox, $loggingPath)
+    public function __construct($fritzbox, $logging)
     {
         $this->fritzbox = new x_contact($fritzbox['url'], $fritzbox['user'], $fritzbox['password']);
-        $this->url = $this->fritzbox->getURL();
         $this->fritzbox->getClient();
-        $this->phonebookList = $this->fritzbox->getPhonebookList();
-        $this->getAreaCodes();
-        $this->loggingPath = empty($loggingPath) ? dirname(__DIR__, 2)  : $loggingPath;
+        $this->url = $this->fritzbox->getURL();
+        $this->phonebookList = explode(',', $this->fritzbox->getPhonebookList());
+        $this->getPhoneCodes();
+        $this->getSocket();
+        $this->logging = $logging['log'] ?: false;
+        $this->loggingPath = $logging['logPath'] ?: dirname(__DIR__, 2);
     }
+
+    // ### SOAP functions ###
 
     /**
      * get a fresh client with new SID
      *
      * return void
      */
-    public function refreshClient ()
+    public function refreshClient()
     {
         $this->fritzbox->getClient();
     }
 
     /**
-     * get the FRITZ!Box callmonitor socket
+     * get phonebook
+     *
+     * @param int $phonebookID
+     * @return array
+     */
+    public function getPhoneNumbers($phonebookID = 0)
+    {
+        $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
+        if ($phoneBook == false) {
+            return [];
+        }
+
+        return $this->fritzbox->getListOfPhoneNumbers($phoneBook);
+    }
+
+    /**
+     * returns a reread phonebook numbers
+     *
+     * @param int $phonebook
+     * @param int $elapse
+     * @return array
+     */
+    public function refreshPhonebook($phonebook, $elapse)
+    {
+        $numbers = $this->getPhoneNumbers($phonebook);
+        $this->nextUpdate = time() + $elapse;
+        $this->setLogging(1, [date('d.m.Y H:i:s', $this->nextUpdate)]);
+
+        return $numbers;
+    }
+
+    /**
+     * returns time of next next update
+     *
+     * @return int
+     */
+    public function getNextUpdate()
+    {
+        return $this->nextUpdate;
+    }
+
+    /**
+     * set new entry in blacklist
+     *
+     * @param callrouter $object
+     * @param int $phonebook
+     * @param string $name
+     * @param string $number
+     * @param string $type
+     * @return array
+     */
+    public function writeBlacklist(int $phonebook, string $name, string $number, string $type)
+    {
+        $this->fritzbox->getClient();
+        $this->fritzbox->setContact($phonebook, $name, $number, $type);
+
+        return $this->getPhoneNumbers($phonebook);
+    }
+
+    /**
+     * return true if phonebook exist
+     *
+     * @param int $phonebook
+     * @return bool
+     */
+    public function phonebookExists($phonebook)
+    {
+        return in_array($phonebook, $this->phonebookList);
+    }
+
+    /**
+     * sanitize an phone number string
+     *
+     * @param string $number
+     * @return string $number
+     */
+    public function sanitizeNumber(string $number): string
+    {
+        if (substr($number, 0, 1) === '+') {                        // if foreign number starts with +
+            $number = '00' . substr($number, 1);                    // it will be replaced with 00
+        }
+
+        return preg_replace("/[^0-9]/", '', $number);               // only digits
+    }
+
+    // ### callmonitor socket functions ###
+
+    /**
+     * return the FRITZ!Box callmonitor socket
      *
      * @param int $timeout
-     * @return resource $socket
+     * @return void
      */
-    public function getSocket(int $timeout = 1)
+    private function getSocket(int $timeout = 1)
     {
         $adress = 'tcp://' . $this->url['host'] . ':' . self::CALLMONITORPORT;
         $stream = stream_socket_client($adress, $errno, $errstr);
@@ -103,164 +173,41 @@ class callrouter
         $socket = socket_import_stream($stream);
         socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);
         stream_set_timeout ($stream, $timeout);
-
-        return $stream;
+        $this->nextRefresh = time() + self::TWOHRS;           // observations have shown that the socket needs to be renewed
+    	$this->fbSocket = $stream;
     }
 
     /**
-     * get list of avalable phonebooks
+     * check and update socket status
      *
-     * @return string $phonebookList
+     * @return string
      */
-    public function getPhonebookList(): string
+    public function refreshSocket()
     {
-        return $this->phonebookList;
-    }
-
-    /**
-     * get phonebook
-     *
-     * @param int $phonebookID
-     * @return array
-     */
-    public function getPhoneNumbers(int $phonebookID = 0)
-    {
-        $numbers = [];
-        $phoneBook = $this->fritzbox->getPhonebook($phonebookID);
-        if ($phoneBook != false) {
-            $numbers = $this->getNumbers((object)$phoneBook);
+        $msg = null;
+        if (stream_get_meta_data($this->fbSocket)['eof']) {               // socket died
+            $this->getSocket();                   // refresh socket
+            $msg = 'Status: Dead Socket refreshed';
+        } elseif (time() > $this->nextRefresh) {
+            $this->getSocket();                   // refresh socket
+            $msg = 'Status: Regular Socket refresh';
         }
 
-        return $numbers;
+        return $msg;
     }
 
     /**
-     * delivers a simple array of numbers from a designated phone book
-     * according to $types - if you want only numbers of a special type
+     * returns the socket output
      *
-     * @param SimpleXMLElement $phoneBook downloaded phone book
-     * @param array $types phonetypes (e.g. home, work, mobil, fax, fax_work)
-     * @return array phone numbers
+     * @param array
      */
-    private function getNumbers(SimpleXMLElement $phoneBook, array $types = []): array
+    public function getSocketStream()
     {
-        $numbers = [];
-        foreach ($phoneBook->phonebook->contact as $contact) {
-            foreach ($contact->telephony->number as $number) {
-                if ((substr($number, 0, 1) == '*') || (substr($number, 0, 1) == '#')) {
-                    continue;
-                }
-                if (count($types)) {
-                    if (in_array($number['type'], $types)) {
-                        $number = (string)$number[0];
-                    } else {
-                        continue;
-                    }
-                } else {
-                    $number = (string)$number[0];
-                }
-                $numbers[] = $number;
-            }
+        if (($output = fgets($this->fbSocket)) != null) {
+            return $this->parseCallString($output);       // [timestamp];[type];[conID];[extern];[intern];[device];
         }
 
-        return $numbers;
-    }
-
-    /**
-     * get an array, where the area code (ONB) is key and area name is value
-     * ONB stands for OrtsNetzBereich(e)
-     * source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA at https://tinyurl.com/y4umk5ww
-     * if you want to update this: save the unpacked file as "ONB.csv" in ./assets
-     *
-     * @return void
-     */
-    private function getAreaCodes()
-    {
-        if (!$onbData = file(dirname(__DIR__, 2) . '/assets/ONB.csv')) {
-            echo 'Could not read ONB data!';
-            return;
-        }
-        if (end($onbData) == "\x1a") {                                  // file comes with this char at eof
-            array_pop($onbData);
-        }
-        $rows = array_map(function($row) { return str_getcsv($row, self::DELIMITER); }, $onbData);
-        array_shift($rows);                                             // delete header
-        foreach($rows as $row) {
-            if ($row[2] == 1) {                                         // only active ONBs ("1")
-                $this->areaCodes[$row[0]] = $row[1];
-            }
-        }
-        $this->areaCodes = $this->areaCodes + self::CELLUAR;            // adding celluar network codes
-        krsort($this->areaCodes, SORT_STRING);                          // reverse sorting for quicker result
-    }
-
-    /**
-     * get the area from a phone number
-     *
-     * @param string $phoneNumber to extract the area code from
-     * @return string|bool $area the found area code or false
-     */
-    public function getArea(string $phoneNumber)
-    {
-        foreach ($this->areaCodes as $key => $value) {
-            if (substr($phoneNumber, 1, strlen($key)) == $key) {    // area codes are without leading zeros
-                return $value;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * get the tellows rating and number of comments
-     *
-     * @param string $number phone number
-     * @return array|bool $score array of rating and number of comments or false
-     */
-    public function getRating(string $number)
-    {
-        $score = [];
-        $url = sprintf('http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123', $number);
-        $rating = @simplexml_load_file($url);
-        if (!$rating) {
-            return false;
-        }
-        $rating->asXML();
-        $score = [
-            'score' => $rating->score,
-            'comments' => $rating->comments,
-        ];
-
-        return $score;
-    }
-
-    /**
-     * set a new contact in a phonebook
-     *
-     * @param string $name
-     * @param string $number
-     * @param string $type
-     * @param int $phonebook
-     * @return void
-     */
-    public function setContact($name, $number, $type, $phonebook)
-    {
-        // assamble minimal contact structure
-        $spamContact = $this->fritzbox->newContact($name, $number, $type);
-        // add the spam call as new phonebook entry
-        $result = $this->fritzbox->setPhonebookEntry($spamContact, $phonebook);
-    }
-
-    /**
-     * write logging info
-     *
-     * @param string $info
-     * @return void
-     */
-    public function writeLogging ($info)
-    {
-        $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
-        file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+        return ['type' => null];
     }
 
     /**
@@ -271,34 +218,195 @@ class callrouter
      * @param string $line
      * @return array $result
      */
-    public function parseCallString(string $line): array
+    private function parseCallString(string $line): array
     {
-        $line = str_replace(';\\r\\n', '', $line);      // eliminate CR
-        $params = explode(';', $line);
+        $params = explode(';', str_replace(';\\r\\n', '', $line));
 
         return [
             'timestamp' => $params[0],
-            'type' => $params[1],
-            'conID' => $params[2],
-            'extern' => $params[3],
-            'intern' => (isset($params[4])) ? $params[4] : "",
-            'device' => (isset($params[5])) ? $params[5] : ""
+            'type'      => $params[1],
+            'conID'     => $params[2],
+            'extern'    => $params[3],
+            'intern'    => $params[4] ?? "",
+            'device'    => $params[5] ?? ""
         ];
     }
 
+    // ### phone number handling ###
+
     /**
-     * sanitize an phone numer string
+     * get an array, where the area code (ONB) is key
+     * and area name is value
+     * ONB stands for OrtsNetzBereich(e)
      *
-     * @param string $number
-     * @return string $number
+     * @return array
      */
-    public function sanitizeNumber (string $number): string
+    private function getAreaCodes()
     {
-        if (substr($number, 0, 1) === '+') {                            // if foreign number starts with +
-            $number = '00' . substr($number, 1, strlen($number) - 1);   // it will be replaced with 00
+        if (!$onbData = file(dirname(__DIR__, 2) . self::ONB_SOURCE)) {
+            echo 'Could not read ONB data from local file!';
+            return [];
+        }
+        !end($onbData) == "\x1a" ?: array_pop($onbData);        // usually file comes with this char at eof
+        $rows = array_map(function($row) { return str_getcsv($row, self::DELIMITER); }, $onbData);
+        array_shift($rows);                                     // delete header
+        foreach($rows as $row) {
+            if ($row[2] == 1) {                                 // only use active ONBs ("1")
+                $areaCodes[$row[0]] = $row[1];
+            }
         }
 
-        return preg_replace("/[^0-9]/","",$number);                     // only digits
+        return $areaCodes;
     }
 
+    /**
+     * returns an array with area codes and codes
+     * of mobile providers:
+     * from longest and highest key [39999] to
+     * the shortest [30]
+     *
+     * @return array
+     */
+    private function getPhoneCodes()
+    {
+        require_once ('assets/celluar.php');
+
+        $this->celluar = $celluarNumbers;                   // we need them seperatly but not sorted
+        $this->prefixes = $this->getAreaCodes() + $this->celluar;
+        krsort($this->prefixes, SORT_NUMERIC);
+    }
+
+    /**
+     * return the german area data and subscribers number
+     * from a phone number:
+     * [0] => area code
+     * [1] => area name (NDC = national destination code)
+     * [2] => subscribers number (base number plus direct dial in)
+     *
+     * Germany currently has around 5200 area codes. If you want
+     * to split up a large number of phone numbers, this array based
+     * solution should be replaced with a tree/leaf structure. However,
+     * this is sufficient for occasional inquiries.
+     *
+     * @param string $phoneNumber to extract the area code from
+     * @return array|bool $area code data or false
+     */
+    public function getArea(string $phoneNumber)
+    {
+        foreach ($this->prefixes as $key => $value) {
+            $codeLength = strlen($key);
+            if ($key == substr($phoneNumber, 1, $codeLength)) {    // area codes are without leading zeros
+                return [
+                    'prefix'      => $key,
+                    'designation' => $value,
+                    'subscriber'  => substr($phoneNumber, 1 + $codeLength),
+                ];
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * returns true if prefix is a celluar code
+     *
+     * @param string $prefix
+     * @return bool
+     */
+    public function isCelluarCode($prefix)
+    {
+        return in_array($prefix, $this->celluar);
+    }
+
+    /**
+     * return the tellows rating and number of comments
+     *
+     * @param string $number phone number
+     * @return array|bool $score array of rating and number of comments or false
+     */
+    public function getRating(string $number)
+    {
+        $url = sprintf('http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123', $number);
+        $rating = @simplexml_load_file($url);
+        if (!$rating) {
+            return false;
+        }
+        $rating->asXML();
+
+        return [
+            'score'    => $rating->score,
+            'comments' => $rating->comments,
+        ];
+    }
+
+    // ### logging functions ###
+
+    /**
+     * set logging
+     *
+     * @param Callrouter $object
+     * @param bool $log
+     * @param int $stringID
+     * @param array $infos
+     */
+    public function setLogging(int $stringID = null, array $infos = [])
+    {
+        if ($this->logging) {
+            switch ($stringID) {
+                case 0:
+                    $message = $infos[0];
+                    break;
+
+                case 1:
+                    $message = sprintf('Initialization: phonebook (whitelist) loaded; next refresh: %s', $infos[0]);
+                    break;
+
+                case 2:
+                    $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
+                    break;
+
+                case 3:
+                    $message = sprintf('Number %s found in phonebook #%s', $infos[0], $infos[1]);
+                    break;
+
+                case 4:
+                    $message = sprintf('Foreign number! Added to spam phonebook #%s', $infos[0]);
+                    break;
+
+                case 5:
+                    $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $infos[0]);
+                    break;
+
+                case 6:
+                    $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $infos[0], $infos[1], $infos[2]);
+                    break;
+
+                case 7:
+                    $message = sprintf('Caller has a rating of %s and %s comments.', $infos[0], $infos[1]);
+                    break;
+
+                case 8:
+                    $message = sprintf('Status: phonebook (whitelist) refreshed; next refresh: %s', $infos[0]);
+                    break;
+
+                case 9:
+                    $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
+                    break;
+
+                    }
+            $this->writeLogging($message);
+        }
+    }
+
+    /**
+     * write logging info
+     *
+     * @param string $info
+     * @return void
+     */
+    private function writeLogging ($info)
+    {
+        $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
+        file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+    }
 }
