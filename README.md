@@ -33,7 +33,7 @@ If you set `'log'` in your config and the `'logPath'` is valid, the essential pr
 
 *ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** (Vorwahlverzeichnis). Unpack the archive (if necessary in the archive) and save the file as `ONB.csv` in the `./assets` directory.
 
-** The [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html) provided no list for download celluar codes (RNB). Those are recently set fix as `const CELLUAR` in `callrouter.php`.
+** The [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html) provided no list for download celluar codes (RNB). Those are recently set fix as `$celluarNumbers` in `celluar.csv` in the `./assets` directory.
 
 ## Requirements
 

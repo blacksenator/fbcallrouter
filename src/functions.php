@@ -4,6 +4,13 @@ namespace blacksenator;
 
 use blacksenator\callrouter\callrouter;
 
+/**
+ * main function
+ *
+ * @param array $config
+ * @param array $testNumbers
+ * @return void
+ */
 function callRouter(array $config, array $testNumbers = [])
 {
     // initialization
@@ -18,7 +25,7 @@ function callRouter(array $config, array $testNumbers = [])
     $testCases = count($testNumbers);
     $testCounter = 0;
     $callrouter = new callrouter($config['fritzbox'], $config['logging']);
-    $elapse = $phonebook['refresh'] < 1 ? $callrouter::ONEDAY : $phonebook['refresh'] * $callrouter::ONEDAY;// sec to next whitelist refresh
+    $elapse = $callrouter->getRefreshInterval($phonebook['refresh']);       // sec to next whitelist refresh
     // load phonebooks
     if ($callrouter->phonebookExists($whitelist)) {
         $whiteNumbers = $callrouter->refreshPhonebook($whitelist, $elapse);
@@ -42,13 +49,12 @@ function callRouter(array $config, array $testNumbers = [])
         if ($values['type'] == 'RING') {                        // incomming call
             $number = $values['extern'];                        // caller number
 
-            // test  (if you use the -t option)
+            // start test case injection (if you use the -t option)
             if ($testCases > 0) {
                 if ($testCounter === 0) {
                     $callrouter->setLogging(0, ['START OF TEST OPERATION']);
                 } elseif ($testCounter === $testCases) {
                     $callrouter->setLogging(0, ['END OF TEST OPERATION']);
-                    $testCounter = 0;
                     $testCases = 0;
                 }
             }
@@ -61,11 +67,11 @@ function callRouter(array $config, array $testNumbers = [])
             }
 
             // detect foreign numbers
-            $foreign = true ? substr($number, 0, 2) === '00' : false;   // FRITZ!OS does not output '+' at callmonitor
+            $isForeign = true ? substr($number, 0, 2) === '00' : false;   // FRITZ!OS does not output '+' at callmonitor
 
             $realName = $contact['caller'];
             if ($contact['timestamp']) {
-                $realName .= ' (' . $values['timestamp'] . ')';
+                $realName .= ' (' . $callrouter->getTimeStampReverse($values['timestamp']) . ')';
             }
             $callrouter->setLogging(2, [$number, $values['intern']]);
             // wash cycle 1: skip unknown
@@ -81,11 +87,11 @@ function callRouter(array $config, array $testNumbers = [])
             } elseif (substr($number, 0, 1) != '0') {
                 $callrouter->setLogging(0, ['No "0" as Perfix. No action possible']);
             // wash cycle 5: put a foreign number on blacklist if blockForeign is set
-            } elseif ($foreign && $filter['blockForeign']) {
+            } elseif ($isForeign && $filter['blockForeign']) {
                 $blackNumbers = $callrouter->writeBlacklist($blacklist, $realName, $number, $contact['type']);
                 $callrouter->setLogging(4, [$blacklist]);
             // wash cycle 6: put domestic numbers with faked area code on blacklist
-            } elseif (!$foreign && !$result = $callrouter->getArea($number)) {
+            } elseif (!$isForeign && !$result = $callrouter->getArea($number)) {
                 $blackNumbers = $callrouter->writeBlacklist($blacklist, $realName, $number, $contact['type']);
                 $callrouter->setLogging(5, [$blacklist]);
             // wash cycle 7: put number on blacklist if area code is valid, but subscribers number start with "0"
@@ -114,9 +120,9 @@ function callRouter(array $config, array $testNumbers = [])
         } elseif (isset($values['type'])) {
             $type = $values['type'] == 'CALL' ? 'CALL OUT' : $values['type'];
             $callrouter->setLogging(0, [$type]);
-        } else {                                                        // do life support during idle
+        } else {                                                    // do life support during idle
             // check if socket is still alive
-            $socketStatus = $callrouter->refreshSocket();               // get current staus of socket and refresh
+            $socketStatus = $callrouter->refreshSocket();           // get current staus of socket and refresh
             !$socketStatus ?: $callrouter->setLogging(0, [$socketStatus]);
         }
         // refresh whitelist if necessary

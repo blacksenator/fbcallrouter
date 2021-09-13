@@ -56,7 +56,7 @@ class callrouter
         $this->loggingPath = $logging['logPath'] ?: dirname(__DIR__, 2);
     }
 
-    // ### SOAP functions ###
+    // ### SOAP related functions ###
 
     /**
      * get a fresh client with new SID
@@ -69,7 +69,7 @@ class callrouter
     }
 
     /**
-     * get phonebook
+     * get numbers from phonebook
      *
      * @param int $phonebookID
      * @return array
@@ -82,6 +82,17 @@ class callrouter
         }
 
         return $this->fritzbox->getListOfPhoneNumbers($phoneBook);
+    }
+
+    /**
+     * count refresh interval days in seconds
+     *
+     * @param int $refresh
+     * @return int
+     */
+    public function getRefreshInterval($refresh)
+    {
+        return $refresh < 1 ? self::ONEDAY : $refresh * self::ONEDAY;
     }
 
     /**
@@ -147,7 +158,7 @@ class callrouter
      */
     public function sanitizeNumber(string $number): string
     {
-        if (substr($number, 0, 1) === '+') {                        // if foreign number starts with +
+        if (substr(trim($number), 0, 1) === '+') {                  // if number starts with "+" (foreign)
             $number = '00' . substr($number, 1);                    // it will be replaced with 00
         }
 
@@ -203,7 +214,7 @@ class callrouter
      */
     public function getSocketStream()
     {
-        if (($output = fgets($this->fbSocket)) != null) {
+        if (($output = fgets($this->fbSocket)) != false) {
             return $this->parseCallString($output);       // [timestamp];[type];[conID];[extern];[intern];[device];
         }
 
@@ -251,9 +262,10 @@ class callrouter
         $rows = array_map(function($row) { return str_getcsv($row, self::DELIMITER); }, $onbData);
         array_shift($rows);                                     // delete header
         foreach($rows as $row) {
-            if ($row[2] == 1) {                                 // only use active ONBs ("1")
-                $areaCodes[$row[0]] = $row[1];
+            if ($row[2] == 0) {                                 // only use active ONBs ("1")
+                continue;
             }
+            $areaCodes[$row[0]] = $row[1];
         }
 
         return $areaCodes;
@@ -271,7 +283,7 @@ class callrouter
     {
         require_once ('assets/celluar.php');
 
-        $this->celluar = $celluarNumbers;                   // we need them seperatly but not sorted
+        $this->celluar = $celluarNumbers;                   // we need them also seperatly
         $this->prefixes = $this->getAreaCodes() + $this->celluar;
         krsort($this->prefixes, SORT_NUMERIC);
     }
@@ -339,6 +351,14 @@ class callrouter
         ];
     }
 
+    public function getTimeStampReverse(string $timeStamp)
+    {
+        $parts = explode(' ', $timeStamp);
+        $date = explode('.', $parts[0]);
+
+        return '20' . $date[2] . '.' . $date[1] . '.' . $date[0] . ' ' . $parts[1];
+    }
+
     // ### logging functions ###
 
     /**
@@ -348,52 +368,32 @@ class callrouter
      * @param bool $log
      * @param int $stringID
      * @param array $infos
+     * @return void
      */
     public function setLogging(int $stringID = null, array $infos = [])
     {
         if ($this->logging) {
-            switch ($stringID) {
-                case 0:
-                    $message = $infos[0];
-                    break;
-
-                case 1:
-                    $message = sprintf('Initialization: phonebook (whitelist) loaded; next refresh: %s', $infos[0]);
-                    break;
-
-                case 2:
-                    $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
-                    break;
-
-                case 3:
-                    $message = sprintf('Number %s found in phonebook #%s', $infos[0], $infos[1]);
-                    break;
-
-                case 4:
-                    $message = sprintf('Foreign number! Added to spam phonebook #%s', $infos[0]);
-                    break;
-
-                case 5:
-                    $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $infos[0]);
-                    break;
-
-                case 6:
-                    $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $infos[0], $infos[1], $infos[2]);
-                    break;
-
-                case 7:
-                    $message = sprintf('Caller has a rating of %s and %s comments.', $infos[0], $infos[1]);
-                    break;
-
-                case 8:
-                    $message = sprintf('Status: phonebook (whitelist) refreshed; next refresh: %s', $infos[0]);
-                    break;
-
-                case 9:
-                    $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
-                    break;
-
-                    }
+            if ($stringID == 0) {
+                $message = $infos[0];
+            } elseif ($stringID == 1) {
+                $message = sprintf('Initialization: phonebook (whitelist) loaded; next refresh: %s', $infos[0]);
+            } elseif ($stringID == 2) {
+                $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
+            } elseif ($stringID == 3) {
+                $message = sprintf('Number %s found in phonebook #%s', $infos[0], $infos[1]);
+            } elseif ($stringID == 4) {
+                $message = sprintf('Foreign number! Added to spam phonebook #%s', $infos[0]);
+            } elseif ($stringID == 5) {
+                $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $infos[0]);
+            } elseif ($stringID == 6) {
+                $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $infos[0], $infos[1], $infos[2]);
+            } elseif ($stringID == 7) {
+                $message = sprintf('Caller has a rating of %s and %s comments.', $infos[0], $infos[1]);
+            } elseif ($stringID == 8) {
+                $message = sprintf('Status: phonebook (whitelist) refreshed; next refresh: %s', $infos[0]);
+            } elseif ($stringID == 9) {
+                $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
+            }
             $this->writeLogging($message);
         }
     }
