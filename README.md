@@ -17,7 +17,7 @@ This version uses a **configuration file with a modified structure** (see config
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is already known in one of your telephone books (`'whitelist'`) Even known spam numbers (`'blacklist'`) are not analyzed any further.
+* First, it is checked, whether the number is already known in one or more of your telephone books (`'whitelist'`). Even known spam numbers (`'blacklist'`) are not analyzed any further.
 
 * If not, than it is checked if it is a foreign number. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 

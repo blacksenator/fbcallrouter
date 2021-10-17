@@ -18,7 +18,7 @@ function callRouter(array $config, array $testNumbers = [])
     $phonebook = $config['phonebook'];
     $contact = $config['contact'];
     $filter = $config['filter'];
-    $whitelist = $phonebook['whitelist'];
+    $whitelists = $phonebook['whitelist'];
     $blacklist = $phonebook['blacklist'];
     $whiteNumbers = [];
     $blackNumbers = [];
@@ -27,11 +27,13 @@ function callRouter(array $config, array $testNumbers = [])
     $callrouter = new callrouter($config['fritzbox'], $config['logging']);
     $elapse = $callrouter->getRefreshInterval($phonebook['refresh']);       // sec to next whitelist refresh
     // load phonebooks
-    if ($callrouter->phonebookExists($whitelist)) {
-        $whiteNumbers = $callrouter->refreshPhonebook($whitelist, $elapse);
-    } else {
-        $message = sprintf('The phonebook #%s (whitelist) does not exist on the FRITZ!Box!', $whitelist);
-        throw new \Exception($message);
+    foreach ($whitelists as $whitelist) {
+        if ($callrouter->phonebookExists($whitelist)) {
+            $whiteNumbers = array_merge($whiteNumbers, $callrouter->refreshPhonebook($whitelist, $elapse));
+        } else {
+            $message = sprintf('The phonebook #%s (whitelist) does not exist on the FRITZ!Box!', $whitelist);
+            throw new \Exception($message);
+        }
     }
     if ($callrouter->phonebookExists($blacklist)) {
         $blackNumbers = $callrouter->getPhoneNumbers($blacklist);
@@ -79,7 +81,7 @@ function callRouter(array $config, array $testNumbers = [])
                 $callrouter->setLogging(0, ['Caller uses CLIR - no action possible']);
             // wash cycle 2: check if number is known (in phonebook included)
             } elseif (in_array($number, $whiteNumbers)) {
-                $callrouter->setLogging(3, [$number, $whitelist]);
+                $callrouter->setLogging(3, [$number, "Whitelist"]);
             // wash cycle 3: check if number is known (in spamlist included)
             } elseif (in_array($number, $blackNumbers)) {                   // avoid duplicate entries
                 $callrouter->setLogging(3, [$number, $blacklist]);
@@ -128,7 +130,10 @@ function callRouter(array $config, array $testNumbers = [])
         // refresh whitelist if necessary
         if (time() > $callrouter->getNextUpdate()) {
             $callrouter->refreshClient();
-            $whiteNumbers = $callrouter->refreshPhonebook($whitelist, $elapse);
+            $whiteNumbers = [];
+            foreach ($whitelists as $whitelist) {
+                $whiteNumbers = array_merge($whiteNumbers, $callrouter->refreshPhonebook($whitelist, $elapse));
+            }
         }
     }
 }
