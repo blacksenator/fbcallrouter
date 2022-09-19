@@ -2,38 +2,45 @@
 
 <img align="right" src="assets/washing.png"/>
 
-The program is trying to identify spam calls. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
+The program is **trying to identify spam calls**. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
 
-## Release note
+## Release notes
 
-This version uses a **configuration file with a modified structure** (see config.example.php)!
+Instead of just one website, **up to three online directories are now queried** whether the number is listed as spam.
+**Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scarping. If the providers make changes to the websites and errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
+
+If you already use an older version be aware that the **structure of the configuration file maybe differ** (see config.example.php).
 
 ## Preconditions
 
-* You need to have a separate spam telefon book beside your phonebook!
+* You use a Fritz!Box for landline telephoning
+* You need to have a [separate spam telefon](https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7590/142_Rufsperren-fur-ankommende-und-ausgehende-Anrufe-z-B-0900-Nummern-einrichten/) book beside your phonebook!
 * The program only works in the German telephone network!
 
 ## Description
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is already known in one or more of your telephone books (`'whitelist'`). Even known spam numbers (`'blacklist'`) are not analyzed any further.
+* First, it is checked, whether the number is **already known** in one or more of your telephone books (`'whitelist'`). Even known spam numbers (`'blacklist'`) are not analyzed any further.
 
-* If not, than it is checked if it is a foreign number. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* If not, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
-* Than it is checked if a domestic number has a valid area code (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* Than it is checked if a domestic number has a **valid area code** (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
-* After that it is checked if the subribers number is valid or starting with a zero (only applies to landline numbers). If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
-* If all this passed, it is checked at [tellows](https://www.tellows.de/) if this number has received a bad score (six to nine) and at least more than three comments. You can adapt the values in the configuration file.
-The second parameter is for quality purposes: not a single opinion there should block a service provider whose call you might expect.
-But if the score is proven bad according to your settings, the number will be transferred to the corresponding phonebook (spam) for future rejections.
+* If all this passed, it is checked at various scoring sites (currently three: [tellows](https://www.tellows.de/), [werruft](https://www.werruft.info) and [cleverdialer](https://www.cleverdialer.de)) if this number has received a **bad online rating**. If so, the number will be transferred to the corresponding phonebook (spam) for future rejections.
 
-If you set `'log'` in your config and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
+The configuration file (default `config.php`) offers various customization options. For example: Adapted to the tellows rating model a bad score is determined as six to nine and needs at least more than three comments. The second parameter is for quality purposes: not a single opinion should block a service provider whose call you might expect.
+You can adapt the values in the configuration file. **But be carefull! If you choose score values equal or smaler then five (5), than numbers with impeccable reputation where written to your rejection list!**
+Because the rating websites use different scales, they are normalized to the tellows scale.
+For example: if we have a rating with five stars, than the `score = -2 * round (stars * 2) / 2 + 11`.
 
-*ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** (Vorwahlverzeichnis). Unpack the archive (if necessary in the archive) and save the file as `ONB.csv` in the `./assets` directory.
+If you set `'log'` in your configuration and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
 
-** The [BNetzA](https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html) provided no list for download celluar codes (RNB). Those are recently set fix as `$celluarNumbers` in `celluar.csv` in the `./assets` directory.
+*ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_node.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** [Vorwahlverzeichnis](https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/Vorwahlverzeichnis_ONB.zip.zip?__blob=publicationFile&v=298). Unpack the archive and save the file as `ONB.csv` in the `./assets` directory.
+
+** The BNetzA do not provide a list for download with celluar codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html?nn=397488#download=1). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
 
 ## Requirements
 
@@ -139,10 +146,14 @@ d) check the status:
 sudo systemctl status fbcallrouter.service
 ```
 
+## Privacy
+
+No private data from this software will be passed on to me or third parties. The program only transmits incoming telephone numbers to third parties in this exception: when using [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/), [cleverdialer](https://www.cleverdialer.de/datenschutzerklaerung-website) and [werruft](https://www.werruft.info/bedingungen/), the incoming number is transmitted to the provider. Their data protection information must be observed!
+
 ## License
 
 This script is released under MIT license.
 
 ## Author
 
-Copyright© 2019 - 2021 Volker Püschel
+Copyright© 2019 - 2022 Volker Püschel

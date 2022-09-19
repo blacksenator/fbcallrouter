@@ -12,6 +12,7 @@
     "require": {
         "php": "^7.0",
         "symfony/console": "^3.0",
+        "guzzlehttp/guzzle": "^7.0",
         "blacksenator/fritzsoap": "^2.1"
     },
     "autoload": {
