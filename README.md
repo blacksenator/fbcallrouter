@@ -7,9 +7,11 @@ The program is **trying to identify spam calls**. So it is listen to the FRITZ!B
 ## Release notes
 
 Instead of just one website, **up to three online directories are now queried** whether the number is listed as spam.
-**Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scarping. If the providers make changes to the websites and errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
+Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
 
-If you already use an older version be aware that the **structure of the configuration file maybe differ** (see config.example.php).
+In addition, a reverse search has now been implemented via the [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) website.
+
+If you already use an older version be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
 
 ## Preconditions
 
@@ -30,6 +32,8 @@ For an incoming call a cascaded check takes place:
 * After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
 * If all this passed, it is checked at various scoring sites (currently three: [tellows](https://www.tellows.de/), [werruft](https://www.werruft.info) and [cleverdialer](https://www.cleverdialer.de)) if this number has received a **bad online rating**. If so, the number will be transferred to the corresponding phonebook (spam) for future rejections.
+
+* Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book (e.g. [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phone book (`'newlist'`) with the determined name.
 
 The configuration file (default `config.php`) offers various customization options. For example: Adapted to the tellows rating model a bad score is determined as six to nine and needs at least more than three comments. The second parameter is for quality purposes: not a single opinion should block a service provider whose call you might expect.
 You can adapt the values in the configuration file. **But be carefull! If you choose score values equal or smaler then five (5), than numbers with impeccable reputation where written to your rejection list!**
@@ -120,15 +124,15 @@ To cancel, press `CTRL+C`.
 
 ### Permanent background processing
 
-The main concept of this tool is to continuously check incoming calls. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network:
+The main concept of this tool is to continuously check incoming calls. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network. A corresponding definition file is prepared: [`fbcallrouter.service`](/fbcallrouter.service)
 
-a) edit `[youruser]` in `fbcallrouter.service` with your device user (e.g. `pi`) and save the file
+a) edit `[youruser]` in this file with your device user (e.g. `pi`) and save the file
 
 ```console
 nano fbcallrouter.service
 ```
 
-b) copy the file `fbcallrouter.service` into `/etc/systemd/system`
+b) copy the file into `/etc/systemd/system`
 
 ```console
 sudo cp fbcallrouter.service /etc/systemd/system/fbcallrouter.service
