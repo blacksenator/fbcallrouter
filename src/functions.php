@@ -91,7 +91,7 @@ function callRouter(array $config, array $testNumbers = [])
             // wash cycle 8
             // try to get a rating from online caller identificators
             } elseif ($result = $dialerCheck->getRating($number)) {
-                if ($dialerCheck->proofRating($$result)) {
+                if ($dialerCheck->proofRating($result)) {
                     $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
                     $callRouter->setLogging(6, [$result['score'], $result['comments'], $blacklist]);
                 } else {
@@ -113,10 +113,10 @@ function callRouter(array $config, array $testNumbers = [])
         }
         // refresh whitelist if necessary
         if (time() > $callRouter->getNextUpdate()) {
-            $phoneTools->refreshClient();
+            $callRouter->refreshClient();
             $whiteNumbers = [];
             foreach ($whitelists as $whitelist) {
-                $whiteNumbers = array_merge($whiteNumbers, $callRouter->refreshPhonebooks($whitelist, $elapse, $phoneTools, $callRouter));
+                $whiteNumbers = array_merge($whiteNumbers, $callRouter->refreshPhonebooks($whitelist, $elapse));
             }
         }
     }
