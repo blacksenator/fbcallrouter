@@ -6,6 +6,14 @@ The program is **trying to identify spam calls**. So it is listen to the FRITZ!B
 
 ## Release notes
 
+### Brand new
+
+At the request of a user, an **e-mail notification** has been added. If the call number is unknown, you can get the logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
+
+If you use allready a previous version please refer to the [update section](#update)!
+
+### Recently added
+
 Instead of just one website, **up to three online directories are now queried** whether the number is listed as spam.
 Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
 
@@ -149,6 +157,70 @@ d) check the status:
 ```console
 sudo systemctl status fbcallrouter.service
 ```
+
+## Update
+
+Change to the installation directory:
+
+```console
+cd /home/[youruser]/fbcallrouter
+```
+
+Stop the service:
+
+```console
+sudo systemctl stop fbcallrouter.service
+```
+
+Delete the old logging file (if you used it here):
+
+```console
+rm callrouter_logging.txt
+```
+
+Get the latest version from:
+
+```console
+git pull https://github.com/blacksenator/fbcallrouter.git
+```
+
+Bring all used libraries up to date:
+
+```console
+composer update --no-dev
+```
+
+Check for changes in the configuration file...
+
+```console
+nano config.example.php
+```
+
+...and eventually make necessary changes/additions in your configuration:
+
+```console
+nano config.example.php
+```
+
+Restart the service...
+
+```console
+sudo systemctl start fbcallrouter.service
+```
+
+...and wait few seconds before you check if the service is running:
+
+```console
+sudo systemctl status fbcallrouter.service
+```
+
+## Does the programm works propperly?
+
+First of all: of course the program can contain bugs and not work as expected. If you are convinced, please open an issue here.
+In addition, it can of course be more due to the selected settings for the configuration of the `filter`.
+Last but not least I myself have made some observations that led me to suspect that the program would not work correctly. In principle, it is advisable in such cases to **switch on logging** (`'log' => true,`) or to compare the active logging with the call list of the FRITZ!Box. You may need to go a step further and correlate dates with reverse search sites.
+An example:
+I had calls that should have been identified as spam at first glance through web research. A closer look showed that this spammer only appeared in the lists at exactly that time and had not yet received a sufficient number of negative comments at the time of the call.
 
 ## Privacy
 

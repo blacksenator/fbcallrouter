@@ -26,6 +26,19 @@ $config = [
         'log'     => true,
         'logPath' => '',    // were callrouter_logging.txt schould be saved (default value is = './')
     ],
+    /*
+    'email' => [
+        'url'      => 'smtp...',
+        'port'     => 587,                                          // alternativ 465
+        'secure'   => 'tls',                                        // alternativ 'ssl'
+        'user'     => '[USER]',                                     // your sender email adress e.g. account
+        'password' => '[PASSWORD]',
+        'receiver' => 'blacksenator@github.com',                    // your email adress to receive the secured contacts
+        'debug'    => 0,                                            // 0 = off (for production use)
+                                                                    // 1 = client messages
+                                                                    // 2 = client and server messages
+    ],
+    */
     'test' => [                 // if program is started with the -t option...
         'numbers' => [          // ...the numbers are injected into the following calls
             '03681443300750',   // tellows score > 5, comments > 3

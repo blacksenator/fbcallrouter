@@ -36,7 +36,8 @@ class dialercheck
      */
     private function getTellowsRating(string $number)
     {
-        $rating = @simplexml_load_file(sprintf(self::TELLOWS, $number));
+        $url = sprintf(self::TELLOWS, $number);
+        $rating = @simplexml_load_file($url);
         if (!$rating) {
             return false;
         }
@@ -45,6 +46,7 @@ class dialercheck
         return [
             'score'    => (string)$rating->score,
             'comments' => (string)$rating->comments,
+            'url'      => $url,
         ];
     }
 
@@ -110,7 +112,8 @@ class dialercheck
      */
     private function getWerRuftInfoRating(string $number)
     {
-        $rawXML = $this->getWebsiteAsXML(self::WRRFTAN . $number . '/');
+        $url = self::WRRFTAN . $number . '/';
+        $rawXML = $this->getWebsiteAsXML($url);
         if (!$rawXML) {
             return false;
         }
@@ -128,6 +131,7 @@ class dialercheck
         return [
             'score'    => $this->convertStarsToScore($weighted / $total),
             'comments' => $total,
+            'url'      => $url,
         ];
     }
 
@@ -139,7 +143,8 @@ class dialercheck
      */
     private function getCleverDialerRating(string $number)
     {
-        $rawXML = $this->getWebsiteAsXML(self::CLVRDLR . $number);
+        $url = self::CLVRDLR . $number;
+        $rawXML = $this->getWebsiteAsXML($url);
         if (!$rawXML) {
             return false;
         }
@@ -151,6 +156,7 @@ class dialercheck
             return [
                 'score'    => $this->convertStarsToScore($stars),
                 'comments' => $comments,
+                'url'      => $url,
             ];
         }
 
@@ -183,17 +189,17 @@ class dialercheck
      */
     public function getRating(string $number)
     {
-        if ($rating = $this->getTellowsRating($number)) {
-            if ($this->proofRating($rating)) {
-                return $rating;
-            }
-        }
         if ($rating = $this->getWerRuftInfoRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
             }
         }
         if ($rating = $this->getCleverDialerRating($number)) {
+            if ($this->proofRating($rating)) {
+                return $rating;
+            }
+        }
+        if ($rating = $this->getTellowsRating($number)) {
             return $rating;
         }
 
@@ -208,8 +214,10 @@ class dialercheck
      */
     public function getDasOertliche(string $number)
     {
-        if (!$rawXML = $this->getWebsiteAsXML(self::DSORTL1 . $number)) {
-            if (!$rawXML = $this->getWebsiteAsXML(self::DSORTL2 . $number)) {
+        $url = self::DSORTL1 . $number;
+        if (!$rawXML = $this->getWebsiteAsXML($url)) {
+            $url = self::DSORTL2 . $number;
+            if (!$rawXML = $this->getWebsiteAsXML($url)) {
                 return false;
             }
         }
@@ -218,13 +226,17 @@ class dialercheck
         }
         if ($result = $rawXML->xpath('//div[@class="nonumber"]')) { // alternative
             if (($altNumber = filter_var($result[0]->p, FILTER_SANITIZE_NUMBER_INT)) != '') {
-                if (!$rawXML = $this->getWebsiteAsXML(self::DSORTL2 . $altNumber)) {
+                $url = self::DSORTL2 . $altNumber;
+                if (!$rawXML = $this->getWebsiteAsXML($url)) {
                     return false;
                 }
             }
         }
         if ($result = $rawXML->xpath('//a[@class="hitlnk_name"]')) {
-            return trim($result[0]);
+            return [
+                'name' => trim($result[0]),
+                'url'  => $url,
+            ];
         }
 
         return false;

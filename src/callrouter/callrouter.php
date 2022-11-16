@@ -54,7 +54,7 @@ class callrouter extends phonetools
     {
         $numbers = $this->getPhoneBooks($phoneBooks);
         $this->nextUpdate = time() + $elapse;
-        $this->setLogging(1, [$phoneBooks[0], date('d.m.Y H:i:s', $this->nextUpdate)]);
+        $this->logging(1, [$phoneBooks[0], date('d.m.Y H:i:s', $this->nextUpdate)]);
 
         return $numbers;
     }
@@ -182,43 +182,47 @@ class callrouter extends phonetools
      * @param array $infos
      * @return void
      */
-    public function setLogging(int $stringID = null, array $infos = [])
+    public function logging(int $stringID = null, array $infos = [])
     {
-        if ($this->logging) {
-            if ($stringID == 0) {
-                $message = $infos[0];
-            } elseif ($stringID == 1) {
-                $message = sprintf('Initialization: phonebook %s loaded; next refresh: %s', $infos[0], $infos[1]);
-            } elseif ($stringID == 2) {
-                $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
-            } elseif ($stringID == 3) {
-                $message = sprintf('Number %s found in phonebook #%s', $infos[0], $infos[1]);
-            } elseif ($stringID == 4) {
-                $message = sprintf('Foreign number! Added to spam phonebook #%s', $infos[0]);
-            } elseif ($stringID == 5) {
-                $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $infos[0]);
-            } elseif ($stringID == 6) {
-                $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $infos[0], $infos[1], $infos[2]);
-            } elseif ($stringID == 7) {
-                $message = sprintf('Caller has a rating of %s and %s comments.', $infos[0], $infos[1]);
-            } elseif ($stringID == 8) {
-                $message = sprintf('Status: phonebook %s refreshed; next refresh: %s', $infos[0], $infos[1]);
-            } elseif ($stringID == 9) {
-                $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
-            }
-            $this->writeLogging($message);
+        if ($stringID == 0) {
+            $message = $infos[0];
+        } elseif ($stringID == 1) {
+            $message = sprintf('Initialization: phonebook %s loaded; next refresh: %s', $infos[0], $infos[1]);
+        } elseif ($stringID == 2) {
+            $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
+        } elseif ($stringID == 3) {
+            $message = sprintf('Number %s found in phonebook #%s', $infos[0], $infos[1]);
+        } elseif ($stringID == 4) {
+            $message = sprintf('Foreign number! Added to spam phonebook #%s', $infos[0]);
+        } elseif ($stringID == 5) {
+            $message = sprintf('Caller uses a nonexistent area code! Added to spam phonebook #%s', $infos[0]);
+        } elseif ($stringID == 6) {
+            $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phonebook #%s', $infos[0], $infos[1], $infos[2]);
+        } elseif ($stringID == 7) {
+            $message = sprintf('Caller has a rating of %s and %s comments.', $infos[0], $infos[1]);
+        } elseif ($stringID == 8) {
+            $message = sprintf('Status: phonebook %s refreshed; next refresh: %s', $infos[0], $infos[1]);
+        } elseif ($stringID == 9) {
+            $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
         }
+        $this->writeLogging($message);
+
+        return $message;
     }
 
     /**
      * write logging info
      *
      * @param string $info
-     * @return void
+     * @return string $message
      */
     private function writeLogging ($info)
     {
         $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
-        file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+        if ($this->logging) {
+            file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+        }
+
+        return $message;
     }
 }
