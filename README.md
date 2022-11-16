@@ -228,11 +228,11 @@ As noted at the beginning, functional enhancements usually go hand in hand with 
 
 #### ONB
 
-ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_node.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** [Vorwahlverzeichnis](https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/Vorwahlverzeichnis_ONB.zip.zip?__blob=publicationFile&v=298). Unpack the archive and save the file as `ONB.csv` in the `./assets` directory.
+ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used comes from the [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/ONRufnr/ortsnetze_node.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** [Vorwahlverzeichnis](https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/Vorwahlverzeichnis_ONB.zip.zip?__blob=publicationFile&v=298). Unpack the archive and save the file as `ONB.csv` in the `./assets` directory.
 
 #### RNB
 
-The BNetzA do not provide a list for download with cellular codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html?nn=397488#download=1). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
+RNB = numbers for mobile services. The BNetzA do not provide a list for download with cellular codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/start.html). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
 
 ## Does the programm works propperly?
 
