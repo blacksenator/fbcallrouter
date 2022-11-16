@@ -6,13 +6,13 @@ The program is **trying to identify spam calls**. So it is listen to the FRITZ!B
 
 ## Release notes
 
-### Brand new
+### Brand new (v2.7)
 
 At the request of a user, an **e-mail notification** has been added. If the call number is unknown, you can get the logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
 
 If you use allready a previous version please refer to the [update section](#update)!
 
-### Recently added
+### Recently added (v2.6)
 
 Instead of just one website, **up to three online directories are now queried** whether the number is listed as spam.
 Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
@@ -89,6 +89,8 @@ The programm accessed the Fritz!Box via TR-064. Make sure that your user is gran
 
 ### Test
 
+It is highly recommended test the setting by following the next steps:
+
 #### Function test
 
 ```console
@@ -115,15 +117,17 @@ php fbcallrouter run -t
 
 It is highly recommended to proceed like this:
 
-1. check if none of the substitutes are allready in your phonebook (especially if they repeat the test)!
-2. if you want to provoke a tellows query, check that the number actually has the desired score and comments
+1. check if none of the substitutes are allready in your phonebook! **Especially if you repeat the test!**
+2. if you want to a web query, check at the named providers that the phone number actually **has the desired score and comments!**
 3. use your celluar phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
 
-```console
-Starting FRITZ!Box call router...
-On guard...
-Running test case 1/5
-```
+    ```console
+    Starting FRITZ!Box call router...
+    On guard...
+    Running test case 1/5
+    ```
+
+4. Hang up and repeat calling
 
 So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
 
@@ -132,7 +136,7 @@ To cancel, press `CTRL+C`.
 
 ### Permanent background processing
 
-The main concept of this tool is to continuously check incoming calls. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network. A corresponding definition file is prepared: [`fbcallrouter.service`](/fbcallrouter.service)
+The **main concept** of this tool is to **continuously check incoming calls**. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network. A corresponding definition file is prepared: [`fbcallrouter.service`](/fbcallrouter.service)
 
 a) edit `[youruser]` in this file with your device user (e.g. `pi`) and save the file
 
@@ -218,13 +222,33 @@ sudo systemctl status fbcallrouter.service
 
 First of all: of course the program can contain bugs and not work as expected. If you are convinced, please open an issue here.
 In addition, it can of course be more due to the selected settings for the configuration of the `filter`.
+
 Last but not least I myself have made some observations that led me to suspect that the program would not work correctly. In principle, it is advisable in such cases to **switch on logging** (`'log' => true,`) or to compare the active logging with the call list of the FRITZ!Box. You may need to go a step further and correlate dates with reverse search sites.
+
 An example:
 I had calls that should have been identified as spam at first glance through web research. A closer look showed that this spammer only appeared in the lists at exactly that time and had not yet received a sufficient number of negative comments at the time of the call.
 
 ## Privacy
 
-No private data from this software will be passed on to me or third parties. The program only transmits incoming telephone numbers to third parties in this exception: when using [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/), [cleverdialer](https://www.cleverdialer.de/datenschutzerklaerung-website) and [werruft](https://www.werruft.info/bedingungen/), the incoming number is transmitted to the provider. Their data protection information must be observed!
+No private data from this software will be passed on to third parties accepts with this exception:
+when using
+
+* [werruft](https://www.werruft.info/bedingungen/),
+* [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/),
+* [cleverdialer](https://www.cleverdialer.de/datenschutzerklaerung-website)
+* [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)
+
+the incoming number is transmitted to the provider. Their data protection information must be observed!
+
+## Improvements
+
+As ever this program started with a few lines of code just to play with the provided interface callmonitor and to figure out how it works...
+
+...than more and more ideas came to my mind how this interface could solve me needs.
+
+If you have an idea for a useful improvement or addition, then please open an issue.
+
+As I have already written in the [fritzsoap documentation](https://github.com/blacksenator/fritzsoap#wishes), it would be an enormous relief **if AVM would provide functionality to terminate incoming calls**, just as FRITZ!OS itself does it with the handling of phone numbers to be blocked. The entry of more and more numbers in corresponding blacklists could be omitted or reduced.
 
 ## License
 
