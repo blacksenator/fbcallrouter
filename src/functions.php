@@ -90,8 +90,8 @@ function callRouter(array $config, array $testNumbers = [])
                 $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
                 $mailText[] = $callRouter->logging(5, [$blacklist]);
             // wash cycle 7: put number on blacklist if area code is valid, but subscribers number start with "0"
-            // but: it´s allowed for celluar numbers to start with "0"!
-            } elseif ($callRouter->isCelluarCode($result['prefix'] == false) && substr($result['subscriber'], 0, 1) == '0') {
+            // but: it´s allowed for cellular numbers to start with "0"!
+            } elseif ($callRouter->isCellularCode($result['prefix'] == false) && substr($result['subscriber'], 0, 1) == '0') {
                 $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
                 $mailText[] = $callRouter->logging(9, [$blacklist]);
             // wash cycle 8

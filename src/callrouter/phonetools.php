@@ -13,12 +13,12 @@ use blacksenator\fritzsoap\x_contact;
 class phonetools
 {
     const ONB_SOURCE = '/assets/ONB.csv';   // path to file with official area codes
-    const CELLUAR = 'assets/celluar.php';
+    const CELLULAR = 'assets/cellular.php';
     const DELIMITER = ';';                              // delimiter of ONB.csv
 
     private $fritzSoap;                                 // SOAP client
-    private $prefixes = [];         // area codes incl. mobile codes ($celluar)
-    private $celluar = [];
+    private $prefixes = [];         // area codes incl. mobile codes ($cellular)
+    private $cellular = [];
     private $phonebookList = [];
 
     /**
@@ -160,10 +160,10 @@ class phonetools
      */
     private function getPhoneCodes()
     {
-        require_once (self::CELLUAR);
+        require_once (self::CELLULAR);
 
-        $this->celluar = $celluarNumbers;       // we need them also seperatly
-        $this->prefixes = $this->getAreaCodes() + $this->celluar;
+        $this->cellular = $cellularNumbers;       // we need them also seperatly
+        $this->prefixes = $this->getAreaCodes() + $this->cellular;
         krsort($this->prefixes, SORT_NUMERIC);
     }
 
@@ -206,13 +206,13 @@ class phonetools
     }
 
     /**
-     * returns true if prefix is a celluar code
+     * returns true if prefix is a cellular code
      *
      * @param string $prefix
      * @return bool
      */
-    public function isCelluarCode($prefix)
+    public function isCellularCode($prefix)
     {
-        return isset($this->celluar[$prefix]);
+        return isset($this->cellular[$prefix]);
     }
 }

@@ -12,7 +12,7 @@
  * to time and to transfer any changes to the following list:
  */
 
-$celluarNumbers = [
+$cellularNumbers = [
     '15019' => 'Tismi BV',
 //  '151'  => 'Telekom',                        reserviert
     '1511'  => 'Telekom',
