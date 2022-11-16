@@ -31,28 +31,17 @@ If you already use an older version be aware that the **structure of the configu
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is **already known** in one or more of your telephone books (`'whitelist'`). Even known spam numbers (`'blacklist'`) are not analyzed any further.
+* First, it is checked, whether the number is **already known** in one or more of your telephone books (`'whitelist'`) and (`'blacklist'`). Known telephone numbers are of course not analyzed further.
 
-* If not, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* If not known, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
 
-* Than it is checked if a domestic number has a **valid area code** (ONB*) or celluar code**. Quite often spammers using fake area codes. If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* Than it is checked if a domestic number has a [**valid area code** ONB](#onb) or [cellular code](#rnb). Quite often spammers using fake area codes. If so, the number will be transferred to the blacklist for future rejections.
 
-* After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist.
 
-* If all this passed, it is checked at various scoring sites (currently three: [tellows](https://www.tellows.de/), [werruft](https://www.werruft.info) and [cleverdialer](https://www.cleverdialer.de)) if this number has received a **bad online rating**. If so, the number will be transferred to the corresponding phonebook (spam) for future rejections.
+* If all this passed, it is checked at various scoring sites (currently three: [werruft](https://www.werruft.info), [cleverdialer](https://www.cleverdialer.de)) and [tellows](https://www.tellows.de/), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
 
-* Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book (e.g. [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phone book (`'newlist'`) with the determined name.
-
-The configuration file (default `config.php`) offers various customization options. For example: Adapted to the tellows rating model a bad score is determined as six to nine and needs at least more than three comments. The second parameter is for quality purposes: not a single opinion should block a service provider whose call you might expect.
-You can adapt the values in the configuration file. **But be carefull! If you choose score values equal or smaler then five (5), than numbers with impeccable reputation where written to your rejection list!**
-Because the rating websites use different scales, they are normalized to the tellows scale.
-For example: if we have a rating with five stars, than the `score = -2 * round (stars * 2) / 2 + 11`.
-
-If you set `'log'` in your configuration and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
-
-*ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_node.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** [Vorwahlverzeichnis](https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/Vorwahlverzeichnis_ONB.zip.zip?__blob=publicationFile&v=298). Unpack the archive and save the file as `ONB.csv` in the `./assets` directory.
-
-** The BNetzA do not provide a list for download with celluar codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html?nn=397488#download=1). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
+* Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phonebook (`'newlist'`) with the determined name.
 
 ## Requirements
 
@@ -77,13 +66,26 @@ Install composer (see <https://getcomposer.org/download/> for newer instructions
 composer install --no-dev --no-suggest
 ```
 
-Edit `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
+[Edit](#configuration) `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
 
 ### Preconditions on the FRITZ!Box
 
-If you do not have your own phonebook for spam numbers, it is essential to add a new one (e.g. "Spamnummern"). Note that the first phonebook ("Telefonbuch") has the number "0" and the numbers are ascending according to the index tabs. Then you have to link this phonebook for call handling: Telefonie -> Rufbehandlung -> Neue Regel -> ankommende Rufe | Bereich: "Telefonbuch" | Telefonbuch: "Spamnummern"
+#### Phonebook for rejections
+
+If you do not have your own phonebook for spam numbers, it is essential to add a new one (e.g. "Spamnummern"). Note that the first phonebook ("Telefonbuch") has the number "0" and the numbers are ascending according to the index tabs.
+Then you have to link this phonebook for call handling: Telefonie -> Rufbehandlung -> Neue Regel -> ankommende Rufe | Bereich: "Telefonbuch" | Telefonbuch: "Spamnummern"
+
+#### FRITZ!Box user
 
 The programm accessed the Fritz!Box via TR-064. Make sure that your user is granted for this interface. The proposed user `dslf_config` is the default user when logging in with a password and without user selection and has the required rights!
+
+### Configuration
+
+The configuration file (default `config.php`) offers various customization options. For example: Adapted to the tellows rating model a bad score is determined as six to nine and needs at least more than three comments. The second parameter is for quality purposes: not a single opinion should block a service provider whose call you might expect.
+You can adapt the values in the configuration file. **But be carefull! If you choose score values equal or smaler then five (5), than numbers with impeccable reputation where written to your rejection list!**
+Because the rating websites use different scales, they are normalized to the tellows scale.
+
+If you set `'log'` in your configuration and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
 
 ## Usage
 
@@ -91,7 +93,7 @@ The programm accessed the Fritz!Box via TR-064. Make sure that your user is gran
 
 It is highly recommended test the setting by following the next steps:
 
-#### Function test
+#### 1. Function test
 
 ```console
 php fbcallrouter run
@@ -101,13 +103,13 @@ If `On guard...` appears, the program is armed.
 
 Make a function test in which you call your landline from your cell phone: your mobile phone number **should not** end up in the spam phone book!
 If the number is in your phone book, nothing should happen anyway (on whitelist).
-Otherwise: your mobile phone number is not a foreign number, the ONB/RNB is correct and you certainly do not have a bad entry in tellows. Therefore these tests should not lead to any sorting out.
+Otherwise: your mobile phone number is not a foreign number, the [ONB](#onb)/[RNB](#rnb) is correct and you certainly do not have a bad entry in tellows. Therefore these tests should not lead to any sorting out.
 If you do not receive an error message, then at least all the wash cycles have been run through once.
 To cancel, press `CTRL+C`.
 
 If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
 
-#### Integration test
+#### 2. Integration test
 
 There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
 
@@ -118,8 +120,10 @@ php fbcallrouter run -t
 It is highly recommended to proceed like this:
 
 1. check if none of the substitutes are allready in your phonebook! **Especially if you repeat the test!**
+
 2. if you want to a web query, check at the named providers that the phone number actually **has the desired score and comments!**
-3. use your celluar phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
+
+3. use your cellular phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
 
     ```console
     Starting FRITZ!Box call router...
@@ -134,89 +138,101 @@ So you have to call as many times as there are numbers in the array to check all
 Check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
 To cancel, press `CTRL+C`.
 
-### Permanent background processing
+### 3. Permanent background processing
 
 The **main concept** of this tool is to **continuously check incoming calls**. Therefore it should ideally run permanently as a background process on a single-board computer (e.g. Raspberry Pi) in the home network. A corresponding definition file is prepared: [`fbcallrouter.service`](/fbcallrouter.service)
 
-a) edit `[youruser]` in this file with your device user (e.g. `pi`) and save the file
+1. edit `[youruser]` in this file with your device user (e.g. `pi`) and save the file
 
-```console
-nano fbcallrouter.service
-```
+    ```console
+    nano fbcallrouter.service
+    ```
 
-b) copy the file into `/etc/systemd/system`
+2. copy the file into `/etc/systemd/system`
 
-```console
-sudo cp fbcallrouter.service /etc/systemd/system/fbcallrouter.service
-```
+    ```console
+    sudo cp fbcallrouter.service /etc/systemd/system/fbcallrouter.service
+    ```
 
-c) enable the service unit:
+3. enable the service unit:
 
-```console
-sudo systemctl enable fbcallrouter.service
-```
+    ```console
+    sudo systemctl enable fbcallrouter.service
+    ```
 
-d) check the status:
+4. check the status:
 
-```console
-sudo systemctl status fbcallrouter.service
-```
+    ```console
+    sudo systemctl status fbcallrouter.service
+    ```
 
 ## Update
 
-Change to the installation directory:
+As noted at the beginning, functional enhancements usually go hand in hand with additions to the configuration file. To install the current version, please proceed as follows:
 
-```console
-cd /home/[youruser]/fbcallrouter
-```
+1. Change to the installation directory:
 
-Stop the service:
+    ```console
+    cd /home/[youruser]/fbcallrouter
+    ```
 
-```console
-sudo systemctl stop fbcallrouter.service
-```
+2. Stop the service:
 
-Delete the old logging file (if you used it here):
+    ```console
+    sudo systemctl stop fbcallrouter.service
+    ```
 
-```console
-rm callrouter_logging.txt
-```
+3. Delete the old logging file (if you used it here):
 
-Get the latest version from:
+    ```console
+    rm callrouter_logging.txt
+    ```
 
-```console
-git pull https://github.com/blacksenator/fbcallrouter.git
-```
+4. Get the latest version from:
 
-Bring all used libraries up to date:
+    ```console
+    git pull https://github.com/blacksenator/fbcallrouter.git
+    ```
 
-```console
-composer update --no-dev
-```
+5. Bring all used libraries up to date:
 
-Check for changes in the configuration file...
+    ```console
+    composer update --no-dev
+    ```
 
-```console
-nano config.example.php
-```
+6. Check for changes in the configuration file...
 
-...and eventually make necessary changes/additions in your configuration:
+    ```console
+    nano config.example.php
+    ```
 
-```console
-nano config.example.php
-```
+7. ...and eventually make necessary changes/additions in your configuration:
 
-Restart the service...
+    ```console
+    nano config.example.php
+    ```
 
-```console
-sudo systemctl start fbcallrouter.service
-```
+8. Restart the service...
 
-...and wait few seconds before you check if the service is running:
+    ```console
+    sudo systemctl start fbcallrouter.service
+    ```
 
-```console
-sudo systemctl status fbcallrouter.service
-```
+9. ...and wait few seconds before you check if the service is running:
+
+    ```console
+    sudo systemctl status fbcallrouter.service
+    ```
+
+### Master data
+
+#### ONB
+
+ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used is from the [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_node.html) and should be valid for a limited period of time. If you want to update them, then download the offered **CSV file** [Vorwahlverzeichnis](https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/Vorwahlverzeichnis_ONB.zip.zip?__blob=publicationFile&v=298). Unpack the archive and save the file as `ONB.csv` in the `./assets` directory.
+
+#### RNB
+
+The BNetzA do not provide a list for download with cellular codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/zugeteilte%20RNB/MobileDiensteBelegteRNB_Basepage.html?nn=397488#download=1). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
 
 ## Does the programm works propperly?
 
