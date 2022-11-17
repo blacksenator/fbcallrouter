@@ -112,7 +112,7 @@ function callRouter(array $config, array $testNumbers = [])
             if (isset($result['url'])) {
                 $mailText[] = 'Traced in ' . $result['url'];
             }
-            if (isset($config['email'])) {
+            if (isset($config['email']) && count($mailText) > 1) {
                 $msg = $infoMail->sendMail($number, $mailText);
                 if ($msg <> null) {
                     $callRouter->logging(0, [$msg]);

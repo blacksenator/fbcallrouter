@@ -45,7 +45,7 @@ class infomail
     {
         $body = 'The following results and actions have been recorded:' . PHP_EOL . PHP_EOL;
         foreach ($protocol as $lines) {
-            $body .= $lines;
+            $body .= $lines . PHP_EOL;
         }
         $this->mail->Subject = self::EMAIL_SBJCT . $number;     //Set the subject line
         $this->mail->Body = $body;
