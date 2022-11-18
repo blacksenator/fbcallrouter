@@ -41,9 +41,21 @@ function callRouter(array $config, array $testNumbers = [])
     // now listen to the callmonitor and wait for new lines
     while (true) {
         $values = $callRouter->getSocketStream();   // get the current line from port
+        /* debug
+        $debugStream = [
+            'timestamp' => date('d.m.y H:i:s'),
+            'type'      => 'RING',
+            'conID'     => '0',
+            'extern'    => '030399760',                         // testnumber
+            'intern'    => '0000000',                           // MSN
+            'device'    => 'SIP0'
+        ];
+        $values = $debugStream;
+        */
         if ($values['type'] == 'RING') {                    // incomming call
             $mailText = [];
             $result = [];
+            $checkOertliche = false;
             $number = $values['extern'];                    // caller number
 
             // start test case injection (if you use the -t option)
@@ -71,7 +83,7 @@ function callRouter(array $config, array $testNumbers = [])
             $mailText[] = $callRouter->logging(2, [$number, $values['intern']]);
             // wash cycle 1: skip unknown
             if (empty($number)) {
-                $mailText[] = $callRouter->logging(0, ['Caller uses CLIR - no action possible']);
+                $callRouter->logging(0, ['Caller uses CLIR - no action possible']);
             // wash cycle 2: check if number is known (in phonebook included)
             } elseif (in_array($number, $whiteNumbers)) {
                 $callRouter->logging(3, [$number, "Whitelist"]);
@@ -83,34 +95,53 @@ function callRouter(array $config, array $testNumbers = [])
                 $mailText[] = $callRouter->logging(0, ['No "0" as Perfix. No action possible']);
             // wash cycle 5: put a foreign number on blacklist if blockForeign is set
             } elseif ($isForeign && $blockForeign) {
-                $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(4, [$blacklist]);
             // wash cycle 6: put domestic numbers with faked area code on blacklist
-            } elseif (!$isForeign && !($result = $callRouter->getArea($number))) {
-                $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+            } elseif (
+                !$isForeign
+                && !($result = $callRouter->getArea($number))
+            ) {
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(5, [$blacklist]);
             // wash cycle 7: put number on blacklist if area code is valid, but subscribers number start with "0"
             // but: it´s allowed for cellular numbers to start with "0"!
-            } elseif ($callRouter->isCellularCode($result['prefix'] == false) && substr($result['subscriber'], 0, 1) == '0') {
-                $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+            } elseif (
+                !$isForeign
+                && $callRouter->isCellularCode($result['prefix'] == false)
+                && substr($result['subscriber'], 0, 1) == '0'
+            ) {
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(9, [$blacklist]);
             // wash cycle 8
             // try to get a rating from online caller identificators
             } elseif ($result = $dialerCheck->getRating($number)) {
                 if ($dialerCheck->proofRating($result)) {
-                    $blackNumbers = $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                    $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                    $blackNumbers[] = $number;
                     $mailText[] = $callRouter->logging(6, [$result['score'], $result['comments'], $blacklist]);
                 } else {
-                    $mailText[] = $callRouter->logging(7, [$result['score'], $result['comments']]);;
+                    $mailText[] = $callRouter->logging(7, [$result['score'], $result['comments']]);
+                    $checkOertliche = true;
                 }
-            // at least try to figure out if the number is listed in a public telephone book
-            } elseif (($newlist !== false) && ($result = $dialerCheck->getDasOertliche($number))) {
-                $mailText[] = $callRouter->setPhoneBookEntry($newlist, $result['name'], $number, $contact['type']);
             } else {
                 $mailText[] = $callRouter->logging(0, ['Online request of number failed!']);
+                $checkOertliche = true;
+            }
+            // at least try to figure out if the number is listed in a public telephone book
+            if (
+                $checkOertliche == true
+                && $result = $dialerCheck->getDasOertliche($number)
+            ){
+                $callRouter->setPhoneBookEntry($newlist, $result['name'], $number, $contact['type']);
+                $whiteNumbers[] = $number;
+                $mailText[] = $callRouter->logging(10, [$result['name'], $newlist]);
             }
             if (isset($result['url'])) {
-                $mailText[] = 'Traced in ' . $result['url'];
+                $mailText[] = $callRouter->logging(11, [$result['url']]);
             }
             if (isset($config['email']) && count($mailText) > 1) {
                 $msg = $infoMail->sendMail($number, $mailText);

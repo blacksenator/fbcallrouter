@@ -10,7 +10,7 @@ namespace blacksenator\callrouter;
  * It is advisable to consult the above address from time to time to check if there are any changes.
  * If so: download the ZIP-file and save the unpacked file as "ONB.csv" in ./assets
  *
- * Copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2022 Volker Püschel
  * @license MIT
  */
 
@@ -204,10 +204,13 @@ class callrouter extends phonetools
             $message = sprintf('Status: phonebook %s refreshed; next refresh: %s', $infos[0], $infos[1]);
         } elseif ($stringID == 9) {
             $message = sprintf('The caller is using an illegal subscriber number! Added to spam phonebook #%s', $infos[0]);
+        } elseif ($stringID == 10) {
+            $message = sprintf('Caller identified as: %s. Entry added to phonebook #%s', $infos[0], $infos[1]);
+        } elseif ($stringID == 11) {
+            $message = sprintf('Number traced in: %s', $infos[0]);
         }
-        $this->writeLogging($message);
 
-        return $message;
+        return $this->writeLogging($message);
     }
 
     /**

@@ -4,7 +4,7 @@ namespace blacksenator\callrouter;
 
 /** class phone
  *
- * Copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2022 Volker Püschel
  * @license MIT
  */
 
@@ -14,6 +14,7 @@ use \DOMDocument;
 class dialercheck
 {
     const TELLOWS = 'http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123';
+    const TELLOW2 = 'https://www.tellows.de/num/';
     const CLVRDLR = 'https://www.cleverdialer.de/telefonnummer/';
     const WRRFTAN = 'https://www.werruft.info/telefonnummer/';
     const DSORTL1 = 'https://www.dasoertliche.de/rueckwaertssuche/?ph=';
@@ -46,7 +47,7 @@ class dialercheck
         return [
             'score'    => (string)$rating->score,
             'comments' => (string)$rating->comments,
-            'url'      => $url,
+            'url'      => self::TELLOW2 . $number,
         ];
     }
 
@@ -149,15 +150,16 @@ class dialercheck
             return false;
         }
         $valuation = $rawXML->xpath('//div[@class = "rating-text"]');
-        $stars = str_replace(' von 5 Sternen', '', $valuation[0]->span[0]);
-        if ($stars > 0) {
-            $commentsLabel = $rawXML->xpath('//table[@class = "table recent-comments"]');
-            $comments = str_replace(' Kommentare zu ' . $number, '', (string)$commentsLabel[0]->caption);
-            return [
-                'score'    => $this->convertStarsToScore($stars),
-                'comments' => $comments,
-                'url'      => $url,
-            ];
+        if (count($valuation)) {
+            $stars = str_replace(' von 5 Sternen', '', $valuation[0]->span[0]);
+            if ($stars > 0) {
+                $comments = preg_replace('/[^0-9]/', '', $valuation[0]->span[1]);
+                return [
+                    'score'    => $this->convertStarsToScore($stars),
+                    'comments' => $comments,
+                    'url'      => $url,
+                ];
+            }
         }
 
         return false;

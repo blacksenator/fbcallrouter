@@ -2,9 +2,9 @@
 
 namespace blacksenator\callrouter;
 
-/** class phone
+/** class phonetools
  *
- * Copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2022 Volker Püschel
  * @license MIT
  */
 
@@ -88,7 +88,7 @@ class phonetools
     }
 
     /**
-     * set new entry in blacklist
+     * set new entry in phonebook
      *
      * @param int $phonebook
      * @param string $name
@@ -100,8 +100,6 @@ class phonetools
     {
         $this->fritzSoap->getClient();
         $this->fritzSoap->setContact($phonebook, $name, $number, $type);
-
-        return $this->getPhoneNumbers($phonebook);
     }
 
     /**

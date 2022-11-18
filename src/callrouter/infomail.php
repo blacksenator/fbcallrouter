@@ -5,7 +5,7 @@ namespace blacksenator\callrouter;
 /**
  * class infomail delivers a simple function based on PHPMailer
  *
- * Copyright (c) 2022 Volker Püschel
+ * @copyright (c) 2022 Volker Püschel
  * @license MIT
  */
 
