@@ -41,17 +41,17 @@ function callRouter(array $config, array $testNumbers = [])
     // now listen to the callmonitor and wait for new lines
     while (true) {
         $values = $callRouter->getSocketStream();   // get the current line from port
-        /* debug
+        // debug
         $debugStream = [
             'timestamp' => date('d.m.y H:i:s'),
             'type'      => 'RING',
             'conID'     => '0',
-            'extern'    => '030399760',                         // testnumber
+            'extern'    => '004420',                            // testnumber
             'intern'    => '0000000',                           // MSN
             'device'    => 'SIP0'
         ];
         $values = $debugStream;
-        */
+        //*/
         if ($values['type'] == 'RING') {                    // incomming call
             $mailText = [];
             $result = [];
@@ -110,8 +110,9 @@ function callRouter(array $config, array $testNumbers = [])
             // but: it´s allowed for cellular numbers to start with "0"!
             } elseif (
                 !$isForeign
-                && $callRouter->isCellularCode($result['prefix'] == false)
-                && substr($result['subscriber'], 0, 1) == '0'
+                && $result = $callRouter->getArea($number)
+                && ($callRouter->isCellularCode($result['prefix']) == false)
+                && (substr($result['subscriber'], 0, 1) == '0')
             ) {
                 $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
                 $blackNumbers[] = $number;

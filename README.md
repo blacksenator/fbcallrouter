@@ -14,8 +14,8 @@ If you use allready a previous version please refer to the [update section](#upd
 
 ### Recently added (v2.6)
 
-Instead of just one website, **up to three online directories are now queried** whether the number is listed as spam.
-Unfortunately, two of them do not offer an interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
+Instead of just one website, **more online directories are now queried** whether the number is listed as spam.
+Unfortunately, most of them do not offer an API/interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
 
 In addition, a reverse search has now been implemented via the [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) website.
 
@@ -39,7 +39,7 @@ For an incoming call a cascaded check takes place:
 
 * After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist.
 
-* If all this passed, it is checked at various scoring sites (currently three: [werruft](https://www.werruft.info), [cleverdialer](https://www.cleverdialer.de)) and [tellows](https://www.tellows.de/), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
+* If all this passed, it is checked at various scoring sites (currently four: [werruft](https://www.werruft.info), [cleverdialer](https://www.cleverdialer.de)), [telefonspion](https://www.telefonspion.de/) and  [tellows](https://www.tellows.de/), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
 
 * Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phonebook (`'newlist'`) with the determined name.
 
@@ -113,17 +113,19 @@ If logging is enabled, than `nano callrouter_logging.txt` will show you what hap
 
 There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
 
-```console
-php fbcallrouter run -t
-```
-
 It is highly recommended to proceed like this:
 
 1. check if none of the substitutes are allready in your phonebook! **Especially if you repeat the test!**
 
 2. if you want to a web query, check at the named providers that the phone number actually **has the desired score and comments!**
 
-3. use your cellular phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
+3. start the programm
+
+    ```console
+    php fbcallrouter run -t
+    ```
+
+4. use your cellular phone to call your landline. The incoming mobil number will be replaced with the first/next number from this array and passes through the inspection process. Additional information is output like this:
 
     ```console
     Starting FRITZ!Box call router...
@@ -131,7 +133,7 @@ It is highly recommended to proceed like this:
     Running test case 1/5
     ```
 
-4. Hang up and repeat calling
+5. Hang up and repeat calling
 
 So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
 
@@ -250,9 +252,10 @@ No private data from this software will be passed on to third parties accepts wi
 when using
 
 * [werruft](https://www.werruft.info/bedingungen/),
-* [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/),
 * [cleverdialer](https://www.cleverdialer.de/datenschutzerklaerung-website)
-* [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)
+* [telefonspion](https://www.telefonspion.de/datenschutz.php)
+* [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/),
+* [Das Örtliche](https://www.dasoertliche.de/datenschutz)
 
 the incoming number is transmitted to the provider. Their data protection information must be observed!
 

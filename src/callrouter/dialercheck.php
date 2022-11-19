@@ -13,10 +13,11 @@ use \DOMDocument;
 
 class dialercheck
 {
+    const WRRFTAN = 'https://www.werruft.info/telefonnummer/';
+    const CLVRDLR = 'https://www.cleverdialer.de/telefonnummer/';
+    const TELSPIO = 'https://www.telefonspion.de/';
     const TELLOWS = 'http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123';
     const TELLOW2 = 'https://www.tellows.de/num/';
-    const CLVRDLR = 'https://www.cleverdialer.de/telefonnummer/';
-    const WRRFTAN = 'https://www.werruft.info/telefonnummer/';
     const DSORTL1 = 'https://www.dasoertliche.de/rueckwaertssuche/?ph=';
     const DSORTL2 = 'https://www.dasoertliche.de/?form_name=search_inv&ph=';
 
@@ -166,6 +167,44 @@ class dialercheck
     }
 
     /**
+     * return the telefonspion rating and number of comments
+     *
+     * @param string $number phone number
+     * @return array|bool $score array of rating and number of comments or false
+     */
+    private function getTelefonSpionRating(string $number)
+    {
+        $url = self::TELSPIO . $number;
+        $rawXML = $this->getWebsiteAsXML($url);
+        if (!$rawXML) {
+            return false;
+        }
+        $rawStrings = explode(' - ', $rawXML->xpath('//title')[0], 3);
+        if (count($rawStrings) <> 3) {
+            return false;
+        }
+        $segments = explode('?', $rawStrings[2]);
+        if (count($segments) <> 2) {
+            return false;
+        }
+        $parts = explode('. Bewertung: ', $segments[0]);
+        if (count($parts) <> 2) {
+            return false;
+        }
+        $valuations = explode(' und ', $parts[0]);
+        $rating = explode('/', $parts[1]);
+        if (intval($rating[0]) < 11) {
+            return [
+                'score'    => -0.8 * $rating[0] + 9,
+                'comments' => preg_replace('/[^0-9]/', '', $valuations[0]),
+                'url'      => $url,
+            ];
+        }
+
+        return false;
+    }
+
+    /**
      * returns if rating is above or equal to the user limits
      *
      * @param array $rating
@@ -197,6 +236,11 @@ class dialercheck
             }
         }
         if ($rating = $this->getCleverDialerRating($number)) {
+            if ($this->proofRating($rating)) {
+                return $rating;
+            }
+        }
+        if ($rating = $this->getTelefonSpionRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
             }
