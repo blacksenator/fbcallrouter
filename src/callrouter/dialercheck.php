@@ -13,9 +13,11 @@ use \DOMDocument;
 
 class dialercheck
 {
-    const WRRFTAN = 'https://www.werruft.info/telefonnummer/';
+    const WRFTINF = 'https://www.werruft.info/telefonnummer/';
     const CLVRDLR = 'https://www.cleverdialer.de/telefonnummer/';
     const TELSPIO = 'https://www.telefonspion.de/';
+    const WRRFTAN = 'https://wer-ruftan.de/Nummer/';        // offen
+    const WRHTANG = 'https://www.werhatangerufen.com/';     // offen
     const TELLOWS = 'http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123';
     const TELLOW2 = 'https://www.tellows.de/num/';
     const DSORTL1 = 'https://www.dasoertliche.de/rueckwaertssuche/?ph=';
@@ -114,7 +116,7 @@ class dialercheck
      */
     private function getWerRuftInfoRating(string $number)
     {
-        $url = self::WRRFTAN . $number . '/';
+        $url = self::WRFTINF . $number . '/';
         $rawXML = $this->getWebsiteAsXML($url);
         if (!$rawXML) {
             return false;

@@ -18,6 +18,7 @@ function callRouter(array $config, array $testNumbers = [])
     // initialization
     date_default_timezone_set("Europe/Berlin");
     $contact = $config['contact'];
+    $image = 'file:///var/InternerSpeicher/FRITZ/fonpix/11211813.jpg';
     $blockForeign = $config['filter']['blockForeign'];
     $whitelists = $config['phonebook']['whitelist'] ?? 0;
     $blacklist = $config['phonebook']['blacklist'] ?? 1;
@@ -41,7 +42,7 @@ function callRouter(array $config, array $testNumbers = [])
     // now listen to the callmonitor and wait for new lines
     while (true) {
         $values = $callRouter->getSocketStream();   // get the current line from port
-        // debug
+        /* debug
         $debugStream = [
             'timestamp' => date('d.m.y H:i:s'),
             'type'      => 'RING',
@@ -51,7 +52,7 @@ function callRouter(array $config, array $testNumbers = [])
             'device'    => 'SIP0'
         ];
         $values = $debugStream;
-        //*/
+        */
         if ($values['type'] == 'RING') {                    // incomming call
             $mailText = [];
             $result = [];
@@ -95,7 +96,7 @@ function callRouter(array $config, array $testNumbers = [])
                 $mailText[] = $callRouter->logging(0, ['No "0" as Perfix. No action possible']);
             // wash cycle 5: put a foreign number on blacklist if blockForeign is set
             } elseif ($isForeign && $blockForeign) {
-                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type'], $image);
                 $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(4, [$blacklist]);
             // wash cycle 6: put domestic numbers with faked area code on blacklist
@@ -103,7 +104,7 @@ function callRouter(array $config, array $testNumbers = [])
                 !$isForeign
                 && !($result = $callRouter->getArea($number))
             ) {
-                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type'], $image);
                 $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(5, [$blacklist]);
             // wash cycle 7: put number on blacklist if area code is valid, but subscribers number start with "0"
@@ -114,14 +115,14 @@ function callRouter(array $config, array $testNumbers = [])
                 && ($callRouter->isCellularCode($result['prefix']) == false)
                 && (substr($result['subscriber'], 0, 1) == '0')
             ) {
-                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type'], $image);
                 $blackNumbers[] = $number;
                 $mailText[] = $callRouter->logging(9, [$blacklist]);
             // wash cycle 8
             // try to get a rating from online caller identificators
             } elseif ($result = $dialerCheck->getRating($number)) {
                 if ($dialerCheck->proofRating($result)) {
-                    $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type']);
+                    $callRouter->setPhoneBookEntry($blacklist, $realName, $number, $contact['type'], $image);
                     $blackNumbers[] = $number;
                     $mailText[] = $callRouter->logging(6, [$result['score'], $result['comments'], $blacklist]);
                 } else {
