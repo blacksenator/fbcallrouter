@@ -29,6 +29,6 @@ class RunCommand extends Command
         if ($input->getOption('test')) {
             $testNumbers = $this->config['test']['numbers'] ?? [];
         }
-        callRouter($this->config, $testNumbers);
+        callRouting($this->config, $testNumbers);
     }
 }

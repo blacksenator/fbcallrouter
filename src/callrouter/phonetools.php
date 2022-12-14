@@ -4,6 +4,14 @@ namespace blacksenator\callrouter;
 
 /** class phonetools
  *
+ * Provides all phone book and phone number related functions
+ * A necessary source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA
+ * @see: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html
+ *
+ * It is advisable to consult the above address from time to time to check if
+ * there are any changes. If so: download the ZIP-file and save the unpacked
+ * file as "ONB.csv" in ./assets
+ *
  * @copyright (c) 2019 - 2022 Volker Püschel
  * @license MIT
  */
@@ -12,14 +20,17 @@ use blacksenator\fritzsoap\x_contact;
 
 class phonetools
 {
-    const ONB_SOURCE = '/assets/ONB.csv';   // path to file with official area codes
-    const CELLULAR = 'assets/cellular.php';
-    const DELIMITER = ';';                              // delimiter of ONB.csv
+    const
+        ONB_SOURCE = '/assets/ONB.csv',   // path to file with official area codes
+        CELLULAR   = 'assets/cellular.php',
+        DELIMITER  = ';';                              // delimiter of ONB.csv
 
-    private $fritzSoap;                                 // SOAP client
-    private $prefixes = [];         // area codes incl. mobile codes ($cellular)
-    private $cellular = [];
-    private $phonebookList = [];
+    private
+        $fritzSoap,                                         // SOAP client
+        $prefixes = [],         // area codes incl. mobile codes ($cellular)
+        $cellular = [],
+        $fritzBoxPhoneBooks = [],
+        $nextUpdate = 0;
 
     /**
      * @param array $config
@@ -28,8 +39,7 @@ class phonetools
     public function __construct(array $fritzBox)
     {
         $this->fritzSoap = new x_contact($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
-        $this->fritzSoap->getClient();
-        $this->phonebookList = explode(',', $this->fritzSoap->getPhonebookList());
+        $this->fritzBoxPhoneBooks = explode(',', $this->fritzSoap->getPhonebookList());
         $this->getPhoneCodes();
     }
 
@@ -44,27 +54,9 @@ class phonetools
     }
 
     /**
-     *
-     */
-    public function getPhoneBooks(array $phoneBooks)
-    {
-        $numbers = [];
-        foreach ($phoneBooks as $phoneBook) {
-            if ($this->phonebookExists($phoneBook)) {
-                $numbers = array_merge($numbers, $this->getPhoneNumbers($phoneBook));
-            } else {
-                $message = sprintf('The phonebook #%s does not exist on the FRITZ!Box!', $phoneBook);
-                throw new \Exception($message);
-            }
-        }
-
-        return $numbers;
-    }
-
-    /**
      * get a fresh client with new SID
      *
-     * return void
+     * @return void
      */
     public function refreshClient()
     {
@@ -72,7 +64,33 @@ class phonetools
     }
 
     /**
-     * get numbers from phonebook
+     * returns time of next update
+     *
+     * @return int
+     */
+    public function getNextPhoneBookUpdate()
+    {
+        return $this->nextUpdate;
+    }
+
+    /**
+     * checks phone book indices against list of phone books from FRITZ!Box
+     *
+     * @param array $phoneBooks
+     * @return void
+     */
+    public function checkListOfPhoneBooks(array $phoneBooks)
+    {
+        foreach ($phoneBooks as $phoneBook) {
+            if (!in_array($phoneBook, $this->fritzBoxPhoneBooks)) {
+                $message = sprintf('The phonebook #%s does not exist on the FRITZ!Box!', $phoneBook);
+                throw new \Exception($message);
+            }
+        }
+    }
+
+    /**
+     * get numbers from a phone book
      *
      * @param int $phonebookID
      * @return array
@@ -88,29 +106,36 @@ class phonetools
     }
 
     /**
-     * set new entry in phonebook
+     * returns phone numbers from phone books
      *
-     * @param int $phonebook
-     * @param string $name
-     * @param string $number
-     * @param string $type
-     * @return array
+     * @param array $phoneBooks
+     * @return array $phoneBookNumbers
      */
-    public function setPhoneBookEntry(int $phonebook, string $name, string $number, string $type)
+    public function getPhoneBookNumbers(array $phoneBooks = [0])
     {
-        $this->fritzSoap->getClient();
-        $this->fritzSoap->setContact($phonebook, $name, $number, $type);
+        $numbers = [];
+        foreach ($phoneBooks as $phoneBook) {
+            $numbers = array_merge($numbers, $this->getPhoneNumbers($phoneBook));
+        }
+
+        return $numbers;
     }
 
     /**
-     * return true if phonebook exist on FRITZ!Box
+     * set new entry in phonebook
      *
-     * @param int $phonebook
-     * @return bool
+     * @param array $entry
+     * @return void
      */
-    public function phonebookExists($phonebook)
+    public function setPhoneBookEntry(array $entry)
     {
-        return in_array($phonebook, $this->phonebookList);
+        $this->fritzSoap->getClient();
+        $this->fritzSoap->setContact(
+            $entry['phonebook'],
+            $entry['name'],
+            $entry['number'],
+            $entry['type']
+        );
     }
 
     /**
@@ -177,12 +202,12 @@ class phonetools
 
     /**
      * return the area code and subscribers number from a phone number:
-     * [0] => area code
-     * [1] => area name (NDC = national destination code)
-     * [2] => subscribers number (base number plus direct dial in)
+     * ['prefix']      => area code
+     * ['designation'] => area name (NDC = national destination code)
+     * ['subscriber']  => subscribers number (base number plus direct dial in)
      *
      * Germany currently has around 5200 area codes, length between two and five
-     * digits (plus zero).
+     * digits (except the leading zero).
      *
      * @param string $phoneNumber to extract the area code from
      * @return array|bool $area code data or false

@@ -2,8 +2,9 @@
 
 namespace blacksenator\callrouter;
 
-/**
- * class infomail delivers a simple function based on PHPMailer
+/** class infomail
+ *
+ * delivers simple e-mail function based on PHPMailer
  *
  * @copyright (c) 2022 Volker Püschel
  * @license MIT
@@ -17,11 +18,11 @@ class infomail
 
     private $mail;
 
-    public function __construct($account)
+    public function __construct(array $account)
     {
         date_default_timezone_set('Etc/UTC');
         $this->mail = new PHPMailer(true);
-        $this->mail->CharSet = 'UTF-8';
+        $this->mail->CharSet = "text/html; charset=UTF-8;";
         $this->mail->isSMTP();                                  // tell PHPMailer to use SMTP
         $this->mail->SMTPDebug  = $account['debug'];
         $this->mail->Host       = $account['url'];              // set the hostname of the mail server
@@ -35,20 +36,21 @@ class infomail
     }
 
     /**
-     * send mail
+     * send email
      *
      * @param string $number
      * @param array $protocoll
      * @return string|void
      */
-    public function sendMail($number, $protocol)
+    public function sendMail(string $number, array $protocol)
     {
-        $body = 'The following results and actions have been recorded:' . PHP_EOL . PHP_EOL;
+        $body = nl2br('The following results and actions have been recorded:' . PHP_EOL . PHP_EOL);
         foreach ($protocol as $lines) {
-            $body .= $lines . PHP_EOL;
+            $body .= nl2br($lines . PHP_EOL);
         }
         $this->mail->Subject = self::EMAIL_SBJCT . $number;     //Set the subject line
         $this->mail->Body = $body;
+        $this->mail->isHTML(true);
         if (!$this->mail->send()) {     // send the message, check for errors
             return 'Mailer Error: ' . $this->mail->ErrorInfo;
         }

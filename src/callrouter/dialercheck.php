@@ -2,7 +2,11 @@
 
 namespace blacksenator\callrouter;
 
-/** class phone
+/** class dialercheck
+ *
+ * provides functions to get rating information from various online directories
+ * dedicated to identify spammers. In the vast majority of cases, the query
+ * takes place via screen scraping, since these websites do not offer no API
  *
  * @copyright (c) 2019 - 2022 Volker Püschel
  * @license MIT
@@ -13,23 +17,61 @@ use \DOMDocument;
 
 class dialercheck
 {
-    const WRFTINF = 'https://www.werruft.info/telefonnummer/';
-    const CLVRDLR = 'https://www.cleverdialer.de/telefonnummer/';
-    const TELSPIO = 'https://www.telefonspion.de/';
-    const WRRFTAN = 'https://wer-ruftan.de/Nummer/';        // offen
-    const WRHTANG = 'https://www.werhatangerufen.com/';     // offen
-    const TELLOWS = 'http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123';
-    const TELLOW2 = 'https://www.tellows.de/num/';
-    const DSORTL1 = 'https://www.dasoertliche.de/rueckwaertssuche/?ph=';
-    const DSORTL2 = 'https://www.dasoertliche.de/?form_name=search_inv&ph=';
+    const WERRUFT = [
+        'https://www.werruft.info/telefonnummer/',
+        'WERRUFT',
+        [
+            'Negativ'    => '9',
+            'Verwirrend' => '7',
+            'Unbekannte' => '5',
+            'Egal'       => '3',
+            'Positiv'    => '1',
+        ],
+    ];
+    const CLVRDLR = [
+        'https://www.cleverdialer.de/telefonnummer/',
+        'Clever Dailer',
+    ];
+    const TELSPIO = [
+        'https://www.telefonspion.de/',
+        'Telefonspion',
+    ];
+    //const WRRFTAN = 'https://wer-ruftan.de/Nummer/';                  // offen
+    //const WMGEHRT = 'https://www.wemgehoert.de/nummer/'               // offen
+    const WRHTANG = [
+        'https://www.werhatangerufen.com/',
+        'WerHatAngerufen',
+    ];
+    const TELLOWS = [
+        'http://www.tellows.de/basic/num/%s?xml=1&partner=test&apikey=test123',
+        'https://www.tellows.de/num/',
+        'tellows',
+    ];
+    const DSOERTL = [
+        'https://www.dasoertliche.de/rueckwaertssuche/?ph=',
+        'https://www.dasoertliche.de/?form_name=search_inv&ph=',
+        'Das Örtliche'
+    ];
 
-    private $score;
-    private $comments;
+    private $score;                     // rating normalized to tellows (1 - 9)
+    private $comments;                  // in most cases number of valuations
 
     public function __construct(array $filter)
     {
         $this->score = $filter['score'] > 9 ? 9 : $filter['score'];
         $this->comments = $filter['comments'] < 3 ? 3 : $filter['comments'];
+    }
+
+    /**
+     * assamble the deeplink string
+     *
+     * @param string $url
+     * @param string $label
+     * @return string
+     */
+    private function getDeepLinkString(string $url, string $label)
+    {
+        return 'Number traced in: <a href="' . $url . '">' . $label . '</a>';
     }
 
     /**
@@ -40,17 +82,18 @@ class dialercheck
      */
     private function getTellowsRating(string $number)
     {
-        $url = sprintf(self::TELLOWS, $number);
-        $rating = @simplexml_load_file($url);
-        if (!$rating) {
+        $url = sprintf(self::TELLOWS[0], $number);
+        if (($rating = @simplexml_load_file($url)) == false) {
             return false;
         }
         $rating->asXML();
+        $url = self::TELLOWS[1] . $number;
 
         return [
             'score'    => (string)$rating->score,
             'comments' => (string)$rating->comments,
-            'url'      => self::TELLOW2 . $number,
+            'url'      => $url,
+            'deeplink' => $this->getDeepLinkString($url, self::TELLOWS[2]),
         ];
     }
 
@@ -78,13 +121,7 @@ class dialercheck
     private function getWebsiteAsXML(string $url)
     {
         $html = @file_get_contents($url);
-        /*
-        if (!$html) {
-            return false;
-        }
 
-        return $this->convertHTMLtoXML($html);
-        */
         return !$html ? false : $this->convertHTMLtoXML($html);
     }
 
@@ -97,14 +134,14 @@ class dialercheck
      */
     private function convertStarsToScore($stars)
     {
-        return round($stars * 2) / 2 * -2 + 11;
+        return round(intval($stars) * 2) / 2 * -2 + 11;
     }
 
     /**
      * return the werruft.info rating and number of comments with screen
      * scraping of
      *  <div id="commentstypelist">
-     *      <span><i class="comop1">10</i> Negativ</span>
+     *      <span><i class="comop1">0</i> Negativ</span>
      *      <span><i class="comop2">0</i> Verwirrend</span>
      *      <span><i class="comop3">0</i> Unbekannte</span>
      *      <span><i class="comop4">0</i> Egal</span>
@@ -116,26 +153,29 @@ class dialercheck
      */
     private function getWerRuftInfoRating(string $number)
     {
-        $url = self::WRFTINF . $number . '/';
-        $rawXML = $this->getWebsiteAsXML($url);
-        if (!$rawXML) {
+        $url = self::WERRUFT[0] . $number . '/';
+        if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
             return false;
         }
-        $comments = $rawXML->xpath('//i[contains(@class, "comop")]');
-        if (!count($comments) == 5) {
+        if (count($comments = $rawXML->xpath('//i[contains(@class, "comop")]')) != 5) {
             return false;
         }
-        $weighted = 0;
-        $total = 0;
+        $totalComment = 0;
         foreach($comments as $comment) {
-            $weighted += intval(substr($comment->attributes()['class'], -1)) * (int)$comment;
-            $total += (int)$comment;
+            $totalComment += (int)$comment;
+        }
+        $title = $rawXML->xpath('//title');
+        if (preg_match('/\((.*?)\:/', $title[0], $match)) {
+            $score = strtr($match[1], self::WERRUFT[2]);
+        } else {
+            return false;
         }
 
         return [
-            'score'    => $this->convertStarsToScore($weighted / $total),
-            'comments' => $total,
+            'score'    => intval($score),
+            'comments' => $totalComment,
             'url'      => $url,
+            'deeplink' => $this->getDeepLinkString($url, self::WERRUFT[1]),
         ];
     }
 
@@ -147,20 +187,19 @@ class dialercheck
      */
     private function getCleverDialerRating(string $number)
     {
-        $url = self::CLVRDLR . $number;
-        $rawXML = $this->getWebsiteAsXML($url);
-        if (!$rawXML) {
+        $url = self::CLVRDLR[0] . $number;
+        if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
             return false;
         }
-        $valuation = $rawXML->xpath('//div[@class = "rating-text"]');
-        if (count($valuation)) {
+        if (count($valuation = $rawXML->xpath('//div[@class = "rating-text"]'))) {
             $stars = str_replace(' von 5 Sternen', '', $valuation[0]->span[0]);
-            if ($stars > 0) {
+            if (intval($stars) > 0) {
                 $comments = preg_replace('/[^0-9]/', '', $valuation[0]->span[1]);
                 return [
                     'score'    => $this->convertStarsToScore($stars),
                     'comments' => $comments,
                     'url'      => $url,
+                    'deeplink' => $this->getDeepLinkString($url, self::CLVRDLR[1]),
                 ];
             }
         }
@@ -176,31 +215,58 @@ class dialercheck
      */
     private function getTelefonSpionRating(string $number)
     {
-        $url = self::TELSPIO . $number;
-        $rawXML = $this->getWebsiteAsXML($url);
-        if (!$rawXML) {
+        $url = self::TELSPIO[0] . $number;
+        if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
             return false;
         }
-        $rawStrings = explode(' - ', $rawXML->xpath('//title')[0], 3);
-        if (count($rawStrings) <> 3) {
+        if (count($rawStrings = explode(' - ', $rawXML->xpath('//title')[0], 3)) <> 3) {
             return false;
         }
-        $segments = explode('?', $rawStrings[2]);
-        if (count($segments) <> 2) {
+        if (count($segments = explode('/10? ', $rawStrings[2])) <> 2) {
             return false;
         }
-        $parts = explode('. Bewertung: ', $segments[0]);
-        if (count($parts) <> 2) {
+        if (count($parts = explode(' Kommentare. Bewertung: ', $segments[0])) <> 2) {
             return false;
         }
-        $valuations = explode(' und ', $parts[0]);
-        $rating = explode('/', $parts[1]);
-        if (intval($rating[0]) < 11) {
+        $valuations = explode(' Bewertungen und ', $parts[0]);
+        if ($valuations[0] > 0 && intval($parts[1]) < 11) {
             return [
-                'score'    => -0.8 * $rating[0] + 9,
-                'comments' => preg_replace('/[^0-9]/', '', $valuations[0]),
+                'score'    => -0.8 * $parts[1] + 9,
+                'comments' => $valuations[0],
                 'url'      => $url,
+                'deeplink' => $this->getDeepLinkString($url, self::TELSPIO[1]),
             ];
+        }
+
+        return false;
+    }
+
+    /**
+     * return the werhatangerufen rating and number of comments
+     *
+     * @param string $number phone number
+     * @return array|bool $score array of rating and number of comments or false
+     */
+    private function getWerHatAngerufenRating(string $number)
+    {
+        $url = self::WRHTANG[0] . $number;
+        if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
+            return false;
+        }
+        $valuation = $rawXML->xpath('//span[@class="rating"]');
+        if (count($valuation)) {
+            $stars = substr(str_replace('Bewertung: ', '', $valuation[0]), 0, 1);
+            if ($stars > 0) {
+                $titleParts = explode(' // ', $$rawXML->xpath('//title')[0]);
+                if (count($titleParts) == 2) {
+                    return [
+                        'score'    => $this->convertStarsToScore($stars),
+                        'comments' => str_replace(' Bewertungen', '', $titleParts[1]),
+                        'url'      => $url,
+                        'deeplink' => $this->getDeepLinkString($url, self::WRHTANG[1]),
+                    ];
+                }
+            }
         }
 
         return false;
@@ -247,6 +313,11 @@ class dialercheck
                 return $rating;
             }
         }
+        if ($rating = $this->getWerHatAngerufenRating($number)) {
+            if ($this->proofRating($rating)) {
+                return $rating;
+            }
+        }
         if ($rating = $this->getTellowsRating($number)) {
             return $rating;
         }
@@ -262,10 +333,10 @@ class dialercheck
      */
     public function getDasOertliche(string $number)
     {
-        $url = self::DSORTL1 . $number;
-        if (!$rawXML = $this->getWebsiteAsXML($url)) {
-            $url = self::DSORTL2 . $number;
-            if (!$rawXML = $this->getWebsiteAsXML($url)) {
+        $url = self::DSOERTL[0] . $number;
+        if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
+            $url = self::DSOERTL[1] . $number;                  // second attemp
+            if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
                 return false;
             }
         }
@@ -274,16 +345,17 @@ class dialercheck
         }
         if ($result = $rawXML->xpath('//div[@class="nonumber"]')) { // alternative
             if (($altNumber = filter_var($result[0]->p, FILTER_SANITIZE_NUMBER_INT)) != '') {
-                $url = self::DSORTL2 . $altNumber;
-                if (!$rawXML = $this->getWebsiteAsXML($url)) {
+                $url = self::DSOERTL[1] . $altNumber;
+                if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
                     return false;
                 }
             }
         }
         if ($result = $rawXML->xpath('//a[@class="hitlnk_name"]')) {
             return [
-                'name' => trim($result[0]),
-                'url'  => $url,
+                'name'     => trim($result[0]),
+                'url'      => $url,
+                'deeplink' => $this->getDeepLinkString($url, self::DSOERTL[2]),
             ];
         }
 

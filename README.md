@@ -2,46 +2,42 @@
 
 <img align="right" src="assets/washing.png"/>
 
-The program is **trying to identify spam calls**. So it is listen to the FRITZ!Box callmonitor and does several wash cycles to figure out whether it is spam or not.
+The program is **trying to identify spam calls**. So it is listen to the [FRITZ!Box](#disclaimer) callmonitor and does several wash cycles to figure out whether it is spam or not.
 
 ## Release notes
 
-### Brand new (v2.7)
+If you already use an older version please refer to the [update section](#update) and be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
 
-At the request of a user, an **e-mail notification** has been added. If the call number is unknown, you can get the logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
+### Brand new (v2.8)
 
-If you use allready a previous version please refer to the [update section](#update)!
+Unknown outgoing phone numbers are now also subjected to a reverse search via [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) and, if necessary, recorded in the corresponding phone book.
 
-### Recently added (v2.6)
+### Recently added (v2.7)
 
-Instead of just one website, **more online directories are now queried** whether the number is listed as spam.
-Unfortunately, most of them do not offer an API/interface and can therefore only be queried via screen scraping. If the providers make changes to the websites and **errors occur as a result, please open an issue here so that the coding can be adapted to the changed websites immediately!**
-
-In addition, a reverse search has now been implemented via the [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) website.
-
-If you already use an older version be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
+At the request of a user, an **e-mail notification** has been added. If an unknown number has led to an entry in one of the phone books, you can get logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
 
 ## Preconditions
 
-* You use a Fritz!Box for landline telephoning
-* You need to have a [separate spam telefon](https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7590/142_Rufsperren-fur-ankommende-und-ausgehende-Anrufe-z-B-0900-Nummern-einrichten/) book beside your phonebook!
-* The program only works in the German telephone network!
+* the program only works in the German telephone network!
+* you use a Fritz!Box for landline telephoning
+* you need to have a [separate spam telefon](https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7590/142_Rufsperren-fur-ankommende-und-ausgehende-Anrufe-z-B-0900-Nummern-einrichten/) book beside your phone book!
+* you have a microcomputer (Raspberry Pi) running 24/7 in your network
 
 ## Description
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is **already known** in one or more of your telephone books (`'whitelist'`) and (`'blacklist'`). Known telephone numbers are of course not analyzed further.
+* First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). Of course, these known telephone numbers are not analyzed further.
 
-* If not known, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be transferred to the corresponding phonebook (`'blacklist'`) for future rejections.
+* If unknown, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections.
 
 * Than it is checked if a domestic number has a [**valid area code** ONB](#onb) or [cellular code](#rnb). Quite often spammers using fake area codes. If so, the number will be transferred to the blacklist for future rejections.
 
 * After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist.
 
-* If all this passed, it is checked at various scoring sites (currently four: [werruft](https://www.werruft.info), [cleverdialer](https://www.cleverdialer.de)), [telefonspion](https://www.telefonspion.de/) and  [tellows](https://www.tellows.de/), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
+* If all this passed, it is checked at various scoring sites (currently five: [WERRUFT](https://www.werruft.info), [Clever Dialer](https://www.cleverdialer.de), [Telefonspion](https://www.telefonspion.de/), [WerHatAngerufen](https://www.werhatangerufen.com) and  [tellows](https://www.tellows.de/)), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
 
-* Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phonebook (`'newlist'`) with the determined name.
+* Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phone book (`'newlist'`) with the determined name.
 
 ## Requirements
 
@@ -66,18 +62,18 @@ Install composer (see <https://getcomposer.org/download/> for newer instructions
 composer install --no-dev --no-suggest
 ```
 
-[Edit](#configuration) `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
+[Edit](#configuration) the `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
 
 ### Preconditions on the FRITZ!Box
 
-#### Phonebook for rejections
+#### Phone book for rejections
 
-If you do not have your own phonebook for spam numbers, it is essential to add a new one (e.g. "Spamnummern"). Note that the first phonebook ("Telefonbuch") has the number "0" and the numbers are ascending according to the index tabs.
-Then you have to link this phonebook for call handling: Telefonie -> Rufbehandlung -> Neue Regel -> ankommende Rufe | Bereich: "Telefonbuch" | Telefonbuch: "Spamnummern"
+If you do not have your own phone book for spam numbers, it is essential to add a new one (e.g. "Spamnummern"). Note that the first phone book ("Telefonbuch") has the index "0" and the numbers are ascending according to the index tabs.
+Then you have to [link this phone book for call handling](https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7590/142_Rufsperren-fur-ankommende-und-ausgehende-Anrufe-z-B-0900-Nummern-einrichten/).
 
 #### FRITZ!Box user
 
-The programm accessed the Fritz!Box via TR-064. Make sure that your user is granted for this interface. The proposed user `dslf_config` is the default user when logging in with a password and without user selection and has the required rights!
+The programm accessed the Fritz!Box via TR-064. Make sure that the user you choose in configuration (see [next topic](#configuration)) is granted for this interface. The proposed user `dslf_config` is the default user when logging in with a password and without user selection and has the required rights!
 
 ### Configuration
 
@@ -88,6 +84,8 @@ Because the rating websites use different scales, they are normalized to the tel
 If you set `'log'` in your configuration and the `'logPath'` is valid, the essential process steps for verification are written to the log file `callrouter_logging.txt`. If `'logPath'` is empty the programm directory is default.
 
 ## Usage
+
+As mentioned, the program is designed to run permanently in the background. In order to ensure this, it is necessary to make sure that this is possible without interruption and should be tested accordingly.
 
 ### Test
 
@@ -103,21 +101,20 @@ If `On guard...` appears, the program is armed.
 
 Make a function test in which you call your landline from your cell phone: your mobile phone number **should not** end up in the spam phone book!
 If the number is in your phone book, nothing should happen anyway (on whitelist).
-Otherwise: your mobile phone number is not a foreign number, the [ONB](#onb)/[RNB](#rnb) is correct and you certainly do not have a bad entry in tellows. Therefore these tests should not lead to any sorting out.
-If you do not receive an error message, then at least all the wash cycles have been run through once.
-To cancel, press `CTRL+C`.
+Otherwise: your mobile phone number is not a foreign number, the [ONB](#onb)/[RNB](#rnb) is correct and you certainly do not have a bad entry in online directories. Therefore these tests should not lead to any sorting out.
+Press `CTRL+C` to terminate the programm.
 
-If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
+If logging is enabled (which is highly recommended for this test), than `nano callrouter_logging.txt` will show you what happend at the callmonitor interface.
 
 #### 2. Integration test
 
-There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
+There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes one after the other for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
 
 It is highly recommended to proceed like this:
 
-1. check if none of the substitutes are allready in your phonebook! **Especially if you repeat the test!**
+1. check if none of the substitutes are already in your phone book! **Especially if you repeat the test!**
 
-2. if you want to a web query, check at the named providers that the phone number actually **has the desired score and comments!**
+2. if you want to a web query, make crosscheck at the named providers that the choosen test phone number(s) actually **has/ve the desired score and comments!**
 
 3. start the programm
 
@@ -133,11 +130,9 @@ It is highly recommended to proceed like this:
     Running test case 1/5
     ```
 
-5. Hang up and repeat calling
+5. hang up and repeat calling from your cellular your landline number. So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
 
-So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
-
-Check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend.
+6. check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend. If e-mail notification is choosen check your inbox.
 To cancel, press `CTRL+C`.
 
 ### 3. Permanent background processing
@@ -172,37 +167,37 @@ The **main concept** of this tool is to **continuously check incoming calls**. T
 
 As noted at the beginning, functional enhancements usually go hand in hand with additions to the configuration file. To install the current version, please proceed as follows:
 
-1. Change to the installation directory:
+1. change to the installation directory:
 
     ```console
     cd /home/[youruser]/fbcallrouter
     ```
 
-2. Stop the service:
+2. stop the service:
 
     ```console
     sudo systemctl stop fbcallrouter.service
     ```
 
-3. Delete the old logging file (if you used it here):
+3. delete the old logging file (if you used it here):
 
     ```console
     rm callrouter_logging.txt
     ```
 
-4. Get the latest version from:
+4. get the latest version from:
 
     ```console
     git pull https://github.com/blacksenator/fbcallrouter.git
     ```
 
-5. Bring all used libraries up to date:
+5. bring all used libraries up to date:
 
     ```console
     composer update --no-dev
     ```
 
-6. Check for changes in the configuration file...
+6. check for changes in the configuration file...
 
     ```console
     nano config.example.php
@@ -214,7 +209,7 @@ As noted at the beginning, functional enhancements usually go hand in hand with 
     nano config.example.php
     ```
 
-8. Restart the service...
+8. restart the service...
 
     ```console
     sudo systemctl start fbcallrouter.service
@@ -251,19 +246,24 @@ I had calls that should have been identified as spam at first glance through web
 No private data from this software will be passed on to third parties accepts with this exception:
 when using
 
-* [werruft](https://www.werruft.info/bedingungen/),
-* [cleverdialer](https://www.cleverdialer.de/datenschutzerklaerung-website)
-* [telefonspion](https://www.telefonspion.de/datenschutz.php)
-* [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/),
+* [WERRUFT](https://www.werruft.info/bedingungen/),
+* [Clever Dialer](https://www.cleverdialer.de/datenschutzerklaerung-website)
+* [Telefonspion](https://www.telefonspion.de/datenschutz.php)
+* [WerHatAngerufen](https://www.werhatangerufen.com/terms)
+* [tellows](https://www.tellows.de/c/about-tellows-de/datenschutz/)
 * [Das Örtliche](https://www.dasoertliche.de/datenschutz)
 
 the incoming number is transmitted to the provider. Their data protection information must be observed!
 
+## Disclaimer
+
+FRITZ!Box, FRITZ!fon, FRITZ!OS are trademarks of [AVM](https://avm.de/). This software is in no way affiliated with AVM and only uses the [interfaces published by them](https://avm.de/service/schnittstellen/).
+
 ## Improvements
 
-As ever this program started with a few lines of code just to play with the provided interface callmonitor and to figure out how it works...
+As ever this program started with only a few lines of code just to play with the callmonitor interface provided and to figure out how it works...
 
-...than more and more ideas came to my mind how this interface could solve me needs.
+...than more and more ideas came to my mind how this interface could solve some of my needs.
 
 If you have an idea for a useful improvement or addition, then please open an issue.
 
