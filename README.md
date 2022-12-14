@@ -8,11 +8,11 @@ The program is **trying to identify spam calls**. So it is listen to the [FRITZ!
 
 If you already use an older version please refer to the [update section](#update) and be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
 
-### Brand new (v2.8)
+### Brand new (v2.9)
 
 Unknown outgoing phone numbers are now also subjected to a reverse search via [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) and, if necessary, recorded in the corresponding phone book.
 
-### Recently added (v2.7)
+### Recently added (v2.8)
 
 At the request of a user, an **e-mail notification** has been added. If an unknown number has led to an entry in one of the phone books, you can get logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
 
