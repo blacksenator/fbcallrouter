@@ -24,7 +24,7 @@ class callrouter
             'timestamp' => '',                  // will be filled automatically
             'type'      => 'RING',                              // or 'CALL'
             'conID'     => '0',                                 // not in use
-            'extern'    => '02012345678',                       // testnumber
+            'extern'    => '0821471487',                       // testnumber
             'intern'    => '0000000',                           // MSN
             'device'    => 'SIP0'                               // not in use
         ];
@@ -41,7 +41,7 @@ class callrouter
         $testCases = 0,                                 // number of test cases
         $testCounter = 0,
         $callMonitor,                                       // class instance
-        $callMonitorValues = [],
+        $callMonitorValues = [],                    // keep call monitor values
         $phoneTools,                                        // class instance
         $dialerCheck,                                       // class instance
         $logging,                                           // class instance
@@ -156,8 +156,21 @@ class callrouter
     public function getCallMonitorStream()
     {
         $this->mailText = [];
+        if (empty($this->callMonitorValues)) {
+            $this->setCallMonitorValues($this->callMonitor->getSocketStream());
+        }
 
-        return $this->callMonitorValues = $this->callMonitor->getSocketStream();
+        return $this->callMonitorValues;
+    }
+
+    /**
+     * set call monitor values
+     *
+     * @return void
+     */
+    public function setCallMonitorValues(array $values = [])
+    {
+        $this->callMonitorValues = $values;
     }
 
     /**
@@ -264,7 +277,7 @@ class callrouter
                     $isForeign ?: $checkDasOertliche = true;
                 }
                 if ($checkDasOertliche) {
-                    $this->checkDasOertliche();
+                    $result = $this->checkDasOertliche();
                 }
                 if (isset($result['url'])) {
                     $this->setLogging(11, [$result['url']]);
@@ -322,8 +335,7 @@ class callrouter
      */
     public function isNumberKnown($number)
     {
-        $result = in_array($number, $this->proofListNumbers);
-        return $result;
+        return in_array($number, $this->proofListNumbers);
     }
 
     /**

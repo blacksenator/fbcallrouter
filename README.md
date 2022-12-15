@@ -130,7 +130,7 @@ It is highly recommended to proceed like this:
     Running test case 1/5
     ```
 
-5. hang up and repeat calling from your cellular your landline number. So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
+5. let it **ring at least twice** before hanging up. Repeat calling from your cellular your landline number. So you have to call as many times as there are numbers in the array to check all test cases (or quit programm execution with `CTRL+C`). The program then ends this number replacement.
 
 6. check the blacklist phone book whether all numbers have been entered as expected. If logging is enabled, than `nano callrouter_logging.txt` will show you what happend. If e-mail notification is choosen check your inbox.
 To cancel, press `CTRL+C`.

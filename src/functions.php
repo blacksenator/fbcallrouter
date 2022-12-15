@@ -16,7 +16,7 @@ function callRouting(array $config, array $testNumbers = [])
     $callRouter = new callrouter($config, $testNumbers);
     while (true) {
         $values = $callRouter->getCallMonitorStream();
-        // $values = $callRouter->setDebugStream();    // uncomment for debugging
+        $values = $callRouter->setDebugStream();    // uncomment for debugging
         if ($values['type'] == 'RING') {                        // inbound call
             // start test case injection (if you use the -t option)
             empty($testNumbers) ?: $callRouter->getTestInjection();
@@ -32,5 +32,6 @@ function callRouting(array $config, array $testNumbers = [])
         $callRouter->sendMail();
         $callRouter->refreshSocket();           // do life support during idle
         $callRouter->refreshPhonebooks();
+        $callRouter->setCallMonitorValues();
     }
 }
