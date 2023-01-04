@@ -23,7 +23,21 @@ class phonetools
     const
         ONB_SOURCE = '/assets/ONB.csv',   // path to file with official area codes
         CELLULAR   = 'assets/cellular.php',
-        DELIMITER  = ';';                              // delimiter of ONB.csv
+        DELIMITER  = ';',                               // delimiter of ONB.csv
+        SRVCSNMBR  = [                              // all incomming numbers?
+        /*  '12'  => 'neuartige Dienste',
+            '137' => 'Televoting, Gewinnspiel',
+            '138' => 'Televoting, Gewinnspiel',
+            '164' => 'Pager',
+            '168' => 'Cityruf/Pager',
+            '169' => 'Cityruf/Pager',
+            '18'  => 'Service-Dienste',
+            '190' => 'Mehrwertdienste', */
+            '700' => 'persönliche Rufnummer',
+            '800' => 'Mehrwertdienste',
+        /*  '900' => 'Mehrwertdienste',
+            '902' => 'Televoting, Gewinnspiel', */
+        ];
 
     private
         $fritzSoap,                                         // SOAP client
@@ -186,8 +200,9 @@ class phonetools
         require_once (self::CELLULAR);
 
         $this->cellular = $cellularNumbers;       // we need them also seperatly
-        $this->prefixes = $this->getAreaCodes() + $this->cellular;
+        $this->prefixes = $this->getAreaCodes() + $this->cellular + self::SRVCSNMBR;
         krsort($this->prefixes, SORT_NUMERIC);
+        file_put_contents('dump.txt', print_r($this->prefixes, true));
     }
 
     /**
