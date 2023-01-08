@@ -24,7 +24,7 @@ class callrouter
             'timestamp' => '',                  // will be filled automatically
             'type'      => 'RING',                              // or 'CALL'
             'conID'     => '0',                                 // not in use
-            'extern'    => '0821471487',                       // testnumber
+            'extern'    => '0',                       // testnumber
             'intern'    => '0000000',                           // MSN
             'device'    => 'SIP0'                               // not in use
         ];
@@ -219,7 +219,7 @@ class callrouter
         $this->mailNotify = false;
         $number = $this->callMonitorValues['extern'];
         if (!$this->isNumberKnown($number)) {
-            if (empty($number)) {
+            if ($number == '') {
                 $this->setLogging(99, ['Caller uses CLIR - no action possible']);
             } else {
                 $checkDasOertliche = false;
@@ -346,7 +346,7 @@ class callrouter
     public function refreshSocket()
     {
         $socketStatus = $this->callMonitor->refreshSocket();
-        $socketStatus == null ?: $this->callRouter->setLogging(99, [$socketStatus]);
+        $socketStatus == null ?: $this->setLogging(99, [$socketStatus]);
     }
 
     /**

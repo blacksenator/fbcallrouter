@@ -202,7 +202,6 @@ class phonetools
         $this->cellular = $cellularNumbers;       // we need them also seperatly
         $this->prefixes = $this->getAreaCodes() + $this->cellular + self::SRVCSNMBR;
         krsort($this->prefixes, SORT_NUMERIC);
-        file_put_contents('dump.txt', print_r($this->prefixes, true));
     }
 
     /**
