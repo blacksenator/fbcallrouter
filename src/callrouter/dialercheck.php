@@ -8,7 +8,7 @@ namespace blacksenator\callrouter;
  * dedicated to identify spammers. In the vast majority of cases, the query
  * takes place via screen scraping, since these websites do not offer no API
  *
- * @copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2023 Volker Püschel
  * @license MIT
  */
 
@@ -257,7 +257,7 @@ class dialercheck
         if (count($valuation)) {
             $stars = substr(str_replace('Bewertung: ', '', $valuation[0]), 0, 1);
             if ($stars > 0) {
-                $titleParts = explode(' // ', $$rawXML->xpath('//title')[0]);
+                $titleParts = explode(' // ', $rawXML->xpath('//title')[0]);
                 if (count($titleParts) == 2) {
                     return [
                         'score'    => $this->convertStarsToScore($stars),

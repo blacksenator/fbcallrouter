@@ -8,14 +8,6 @@ The program is **trying to identify spam calls**. So it is listen to the [FRITZ!
 
 If you already use an older version please refer to the [update section](#update) and be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
 
-### Brand new (v2.9)
-
-Unknown outgoing phone numbers are now also subjected to a reverse search via [Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/) and, if necessary, recorded in the corresponding phone book.
-
-### Recently added (v2.8)
-
-At the request of a user, an **e-mail notification** has been added. If an unknown number has led to an entry in one of the phone books, you can get logging information as an email. Could the number be researched on the web (see next paragraph) - as a spammer or by reverse search - even with the info where it was found as a **deep link**: so you can dive into detailed information to that phone number direct from the e-mail.
-
 ## Preconditions
 
 * the program only works in the German telephone network!
@@ -29,11 +21,11 @@ For an incoming call a cascaded check takes place:
 
 * First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). Of course, these known telephone numbers are not analyzed further.
 
-* If unknown, than it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections.
+* If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections.
 
-* Than it is checked if a domestic number has a [**valid area code** ONB](#onb) or [cellular code](#rnb). Quite often spammers using fake area codes. If so, the number will be transferred to the blacklist for future rejections.
+* It is checked if a domestic number has a [**valid area code** ONB](#onb) or [cellular code](#rnb). Quite often spammers using fake area codes. If so, the number will be transferred to the blacklist for future rejections. In the same way, it is checked for foreign phone numbers whether the transmitted **country code is valid**.
 
-* After that it is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist.
+* It is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist. It has also been observed that spammers put the recipient's area code followed by the country code 49 in front of their mobile phone numbers in order to disguise their numbers.
 
 * If all this passed, it is checked at various scoring sites (currently five: [WERRUFT](https://www.werruft.info), [Clever Dialer](https://www.cleverdialer.de), [Telefonspion](https://www.telefonspion.de/), [WerHatAngerufen](https://www.werhatangerufen.com) and  [tellows](https://www.tellows.de/)), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
 
@@ -229,7 +221,11 @@ ONB = OrtsNetzBereiche (Vorwahlbereiche/Vorwahlen). The list used comes from the
 
 #### RNB
 
-RNB = numbers for mobile services. The BNetzA do not provide a list for download with cellular codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/start.html). The currently used ones were transferred to the `./assets` directory as `$cellular Numbers` in `cellular.csv`.
+RNB = numbers for mobile services. The BNetzA do not provide a list for download with cellular codes [(RNB)](https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Nummerierung/MobileDienste/start.html). The currently used ones were transferred to the `./assets` directory as `$cellularNumber` in `cellular.php`.
+
+#### Country codes
+
+The currently used ones were transferred to the `./assets` directory as `$countryCode` in `countrycode.php`.
 
 ## Does the programm works propperly?
 
@@ -275,4 +271,4 @@ This script is released under MIT license.
 
 ## Author
 
-Copyright© 2019 - 2022 Volker Püschel
+Copyright© 2019 - 2023 Volker Püschel

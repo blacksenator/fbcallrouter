@@ -4,7 +4,7 @@ namespace blacksenator\callrouter;
 
 /** class phonetools
  *
- * Provides all phone book and phone number related functions
+ * Provides all phone book and phone number related functions for fbcallrouter
  * A necessary source is "Vorwahlverzeichnis (VwV)" a zipped CSV from BNetzA
  * @see: https://www.bundesnetzagentur.de/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/ONRufnr/ON_Einteilung_ONB/ON_ONB_ONKz_ONBGrenzen_Basepage.html
  *
@@ -12,17 +12,19 @@ namespace blacksenator\callrouter;
  * there are any changes. If so: download the ZIP-file and save the unpacked
  * file as "ONB.csv" in ./assets
  *
- * @copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2023 Volker Püschel
  * @license MIT
  */
 
 use blacksenator\fritzsoap\x_contact;
+use blacksenator\fritzsoap\x_voip;
 
 class phonetools
 {
     const
         ONB_SOURCE = '/assets/ONB.csv',   // path to file with official area codes
         CELLULAR   = 'assets/cellular.php',
+        COUNTRYCDS = 'assets/countrycodes.php',
         DELIMITER  = ';',                               // delimiter of ONB.csv
         SRVCSNMBR  = [                              // all incomming numbers?
         /*  '12'  => 'neuartige Dienste',
@@ -40,9 +42,12 @@ class phonetools
         ];
 
     private
-        $fritzSoap,                                         // SOAP client
-        $prefixes = [],         // area codes incl. mobile codes ($cellular)
-        $cellular = [],
+        $fritzContact,                                          // SOAP client
+        $fritzVoIP,                                             // SOAP client
+        $prefixes = [],             // area codes incl. mobile codes ($cellular)
+        $cellular = [],                                     // cellular prefixes
+        $countryCodes = [],// country codes
+        $ownAreaCode,
         $fritzBoxPhoneBooks = [],
         $nextUpdate = 0;
 
@@ -52,9 +57,12 @@ class phonetools
      */
     public function __construct(array $fritzBox)
     {
-        $this->fritzSoap = new x_contact($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
-        $this->fritzBoxPhoneBooks = explode(',', $this->fritzSoap->getPhonebookList());
+        $this->fritzContact = new x_contact($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
+        $this->fritzBoxPhoneBooks = explode(',', $this->fritzContact->getPhonebookList());
+        $this->fritzVoIP = new x_voip($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
+        $this->ownAreaCode = $this->fritzVoIP->getVoIPCommonAreaCode();
         $this->getPhoneCodes();
+        $this->getCountryCodes();
     }
 
     /**
@@ -64,7 +72,7 @@ class phonetools
      */
     public function getURL()
     {
-        return $this->fritzSoap->getURL();
+        return $this->fritzContact->getURL();
     }
 
     /**
@@ -74,7 +82,20 @@ class phonetools
      */
     public function refreshClient()
     {
-        $this->fritzSoap->getClient();
+        $this->fritzContact->getClient();
+    }
+
+    /**
+     * returns area code from FRITZ!Box settings
+     *
+     * @return array
+     */
+    public function getOwnAreaCode()
+    {
+        return [
+            'code'   => $this->ownAreaCode,
+            'length' => strlen($this->ownAreaCode)
+        ];
     }
 
     /**
@@ -111,12 +132,12 @@ class phonetools
      */
     private function getPhoneNumbers(int $phonebookID = 0)
     {
-        $phoneBook = $this->fritzSoap->getPhonebook($phonebookID);
+        $phoneBook = $this->fritzContact->getPhonebook($phonebookID);
         if ($phoneBook == false) {
             return [];
         }
 
-        return $this->fritzSoap->getListOfPhoneNumbers($phoneBook);
+        return $this->fritzContact->getListOfPhoneNumbers($phoneBook);
     }
 
     /**
@@ -143,8 +164,8 @@ class phonetools
      */
     public function setPhoneBookEntry(array $entry)
     {
-        $this->fritzSoap->getClient();
-        $this->fritzSoap->setContact(
+        $this->fritzContact->getClient();
+        $this->fritzContact->setContact(
             $entry['phonebook'],
             $entry['name'],
             $entry['number'],
@@ -190,10 +211,10 @@ class phonetools
     }
 
     /**
-     * returns an array with area codes and codes of mobile providers: from
+     * sets the arrays with area codes and codes of mobile providers: from
      * longest and highest key [39999] to the shortest [30]
      *
-     * @return array
+     * @return void
      */
     private function getPhoneCodes()
     {
@@ -202,6 +223,20 @@ class phonetools
         $this->cellular = $cellularNumbers;       // we need them also seperatly
         $this->prefixes = $this->getAreaCodes() + $this->cellular + self::SRVCSNMBR;
         krsort($this->prefixes, SORT_NUMERIC);
+    }
+
+    /**
+     * sets the array with country codes: from longest and highest key [7979]
+     * (Russia) to the shortest [1] (USA)
+     *
+     * @return void
+     */
+    private function getCountryCodes()
+    {
+        require_once (self::COUNTRYCDS);
+
+        $this->countryCodes = $countryCodes;
+        krsort($this->countryCodes, SORT_NUMERIC);
     }
 
     /**
@@ -217,11 +252,12 @@ class phonetools
     /**
      * return the area code and subscribers number from a phone number:
      * ['prefix']      => area code
-     * ['designation'] => area name (NDC = national destination code)
+     * ['designation'] => area name (~NDC: national destination code)
      * ['subscriber']  => subscribers number (base number plus direct dial in)
      *
      * Germany currently has around 5200 area codes, length between two and five
      * digits (except the leading zero).
+     * @see https://de.wikipedia.org/wiki/Rufnummer#/media/Datei:Telefonnummernaufbau.png
      *
      * @param string $phoneNumber to extract the area code from
      * @return array|bool $area code data or false
@@ -235,6 +271,32 @@ class phonetools
                     'prefix'      => $needle,
                     'designation' => $this->prefixes[$needle],
                     'subscriber'  => substr($phoneNumber, 1 + $i),
+                ];
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * return the country code and country from a phone number:
+     * ['countrycode']  => country code incl. national access code if necessary
+     * ['country']      => country name
+     * ['national']     => NSN: national significant number
+     * @see https://de.wikipedia.org/wiki/Rufnummer#/media/Datei:Telefonnummernaufbau.png
+     *
+     * @param string $phoneNumber to extract the country code from
+     * @return array|bool $country code data or false
+     */
+    public function getCountry(string $phoneNumber)
+    {
+        for ($i = 4; $i > 0; $i--) {
+            $needle = substr($phoneNumber, 2, $i);
+            if (isset($this->countryCodes[$needle])) {
+                return [
+                    'countrycode' => $needle,
+                    'country'     => $this->countryCodes[$needle],
+                    'national'    => substr($phoneNumber, 2 + $i),
                 ];
             }
         }

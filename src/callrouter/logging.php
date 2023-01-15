@@ -6,7 +6,7 @@ namespace blacksenator\callrouter;
  *
  * provides function to log call router actions
  *
- * @copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2023 Volker Püschel
  * @license MIT
  */
 
@@ -41,14 +41,14 @@ class logging
             $message = sprintf('Phone books %s (re-)loaded; next refresh: %s', $infos[0], $infos[1]);
         } elseif ($stringID == 2) {
             $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
-    //  } elseif ($stringID == 3) {                     // currently not in use
-    //      $message = '';
+        } elseif ($stringID == 3) {
+            $message = sprintf('Caller uses an unknown country code! Added to spam phone book #%s', $infos[1]);
         } elseif ($stringID == 4) {
-            $message = sprintf('Foreign number! Added to spam phone book #%s', $infos[0]);
+            $message = sprintf('Foreign number. Added to spam phone book #%s', $infos[1]);
         } elseif ($stringID == 5) {
             $message = sprintf('Caller uses a nonexistent area code! Added to spam phone book #%s', $infos[1]);
         } elseif ($stringID == 6) {
-            $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phone book #%s', $infos[0], $infos[1], $infos[2]);
+            $message = sprintf('Caller has a bad reputation (%s/%s)! Added to spam phone book #%s', $infos[2], $infos[3], $infos[1]);
         } elseif ($stringID == 7) {
             $message = sprintf('Caller has a rating of %s out of 9 and %s valuations.', $infos[0], $infos[1]);
         } elseif ($stringID == 8) {
@@ -61,6 +61,12 @@ class logging
             $message = sprintf('Number traced in: %s', $infos[0]);
         } elseif ($stringID == 12) {
             $message = sprintf('CALL OUT to number %s', $infos[0]);
+        } elseif ($stringID == 13) {
+            $message = sprintf('Number length is not in range. Added to spam phone book #%s', $infos[1]);
+        } elseif ($stringID == 14) {
+            $message = sprintf('Caller transmits an unusual number combination. Added to spam phone book #%s', $infos[1]);
+        } elseif ($stringID == 15) {
+            $message = sprintf('Derived actual phone number: %s Added to spam phone book #%s', $infos[2], $infos[1]);
         } elseif ($stringID == 99) {
             $message = $infos[0];
         }

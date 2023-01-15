@@ -8,7 +8,7 @@ namespace blacksenator\callrouter;
  * Observations have shown that the socket connection needs to be refreshed
  * every two hours if it is constantly being eavesdropped
  *
- * @copyright (c) 2019 - 2022 Volker Püschel
+ * @copyright (c) 2019 - 2023 Volker Püschel
  * @license MIT
  */
 
