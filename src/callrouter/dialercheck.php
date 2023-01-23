@@ -219,20 +219,11 @@ class dialercheck
         if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
             return false;
         }
-        if (count($rawStrings = explode(' - ', $rawXML->xpath('//title')[0], 3)) <> 3) {
-            return false;
-        }
-        if (count($segments = explode('/10? ', $rawStrings[2])) <> 2) {
-            return false;
-        }
-        if (count($parts = explode(' Kommentare. Bewertung: ', $segments[0])) <> 2) {
-            return false;
-        }
-        $valuations = explode(' Bewertungen und ', $parts[0]);
-        if ($valuations[0] > 0 && intval($parts[1]) < 11) {
+        $valuations = $rawXML->xpath('//div[@class = "count"]');
+        if (count($valuations) == 2) {
             return [
-                'score'    => -0.8 * $parts[1] + 9,
-                'comments' => $valuations[0],
+                'score'    => -0.8 * intval($valuations[1]) + 9,
+                'comments' => (string)$valuations[0],
                 'url'      => $url,
                 'deeplink' => $this->getDeepLinkString($url, self::TELSPIO[1]),
             ];

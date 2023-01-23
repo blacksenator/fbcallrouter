@@ -46,7 +46,7 @@ class phonetools
         $fritzVoIP,                                             // SOAP client
         $prefixes = [],             // area codes incl. mobile codes ($cellular)
         $cellular = [],                                     // cellular prefixes
-        $countryCodes = [],// country codes
+        $countryCodes = [],                                     // country codes
         $ownAreaCode,
         $fritzBoxPhoneBooks = [],
         $nextUpdate = 0;
@@ -174,7 +174,8 @@ class phonetools
     }
 
     /**
-     * sanitize an phone number string
+     * Clean up test number string to ensure no characters other than those are
+     * used by the call monitor
      *
      * @param string $number
      * @return string $number
@@ -185,7 +186,7 @@ class phonetools
             $number = '00' . substr($number, 1);    // it will be replaced with 00
         }
 
-        return preg_replace("/[^0-9]/", '', $number);           // only digits
+        return preg_replace('/[^0-9\(\)]/', '', $number);       // only digits
     }
 
     /**

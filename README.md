@@ -21,15 +21,19 @@ For an incoming call a cascaded check takes place:
 
 * First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). Of course, these known telephone numbers are not analyzed further.
 
-* If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections.
+* If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections. If not, then foreign numbers are screened to see whether they exceed or fall short of the expected lengths or whether they transmit country codes that are not (or no longer) used.
 
-* It is checked if a domestic number has a [**valid area code** ONB](#onb) or [cellular code](#rnb). Quite often spammers using fake area codes. If so, the number will be transferred to the blacklist for future rejections. In the same way, it is checked for foreign phone numbers whether the transmitted **country code is valid**.
+* The following screenings are carried out for **domestic numbers**, which are essentially aimed at "CLIP - no screening":
+  * transmission of a [**unvalid area code** ONB](#onb) or [cellular code](#rnb)
+  * unvalid subscribers number, if a landline number starts with an zero
+  * concealment of a mobile phone number using a prefix consisting of your own area code and country code,
+  * transmission of the actual phone number in brackets after a user provided number and
+  * falling below or exceeding expected lengths.
 
-* It is checked if the **subscribers number is valid** (starting with a zero -> only applies to landline numbers). If so, the number will be transferred to the blacklist. It has also been observed that spammers put the recipient's area code followed by the country code 49 in front of their mobile phone numbers in order to disguise their numbers.
-
-* If all this passed, it is checked at various scoring sites (currently five: [WERRUFT](https://www.werruft.info), [Clever Dialer](https://www.cleverdialer.de), [Telefonspion](https://www.telefonspion.de/), [WerHatAngerufen](https://www.werhatangerufen.com) and  [tellows](https://www.tellows.de/)), if this number has received a **bad online rating**. If so, the number will be transferred to the blacklist.
+* If all this passed, it is checked at various scoring sites (currently five: [WERRUFT](https://www.werruft.info), [Clever Dialer](https://www.cleverdialer.de), [Telefonspion](https://www.telefonspion.de/), [WerHatAngerufen](https://www.werhatangerufen.com) and  [tellows](https://www.tellows.de/)), if this number has received a **bad online rating**. If this is the case, the number - also as with pattern errors - is included in the blacklist.
 
 * Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phone book (`'newlist'`) with the determined name.
+**This feature is also used for outgoing calls to unknown numbers!**
 
 ## Requirements
 
@@ -58,10 +62,14 @@ composer install --no-dev --no-suggest
 
 ### Preconditions on the FRITZ!Box
 
-#### Phone book for rejections
+#### Phone book for rejections (bad apples)
 
 If you do not have your own phone book for spam numbers, it is essential to add a new one (e.g. "Spamnummern"). Note that the first phone book ("Telefonbuch") has the index "0" and the numbers are ascending according to the index tabs.
 Then you have to [link this phone book for call handling](https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7590/142_Rufsperren-fur-ankommende-und-ausgehende-Anrufe-z-B-0900-Nummern-einrichten/).
+
+#### Phone book for trustworthy new numbers
+
+If you want to add previously unknown but trustworthy  umbers as contacts, you can do this optionally: e.g. in a separate phone book that you have created in the FRITZ!Box. YHowever, you can also have these additions added to your standard telephone book..
 
 #### FRITZ!Box user
 
@@ -225,7 +233,7 @@ RNB = numbers for mobile services. The BNetzA do not provide a list for download
 
 #### Country codes
 
-The currently used ones were transferred to the `./assets` directory as `$countryCode` in `countrycode.php`.
+The currently used ones were transferred to the `./assets` directory as `$countryCode` in `countrycode.php`. The list was mainly compiled from information from [wikipedia](https://de.wikipedia.org/wiki/L%C3%A4ndervorwahlliste_sortiert_nach_Nummern).
 
 ## Does the programm works propperly?
 

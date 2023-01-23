@@ -33,7 +33,7 @@ class callrouter
             'timestamp' => '',                  // will be filled automatically
             'type'      => 'RING',                              // or 'CALL'
             'conID'     => '0',                                 // not in use
-            'extern'    => '',                       // testnumber
+            'extern'    => '03019640014 (0865269303)',          // testnumber
             'intern'    => '0000000',                           // MSN
             'device'    => 'SIP0'                               // not in use
         ];
@@ -55,7 +55,8 @@ class callrouter
         $dialerCheck,                                       // class instance
         $logging,                                           // class instance
         $infoMail = null,                                   // class instance
-        $contactEntry,
+        $ownArea = [],
+        $contactEntry = [],
         $mailNotify = false,
         $mailText = [],                 // collector of logging info for email
         $elapse = 0,
@@ -69,6 +70,7 @@ class callrouter
         $this->realName = $this->contact['caller'];
         $this->blockForeign = $config['filter']['blockForeign'] ?? false;
         $this->phoneTools = new phonetools($config['fritzbox']);
+        $this->ownArea = $this->phoneTools->getOwnAreaCode();
         $this->setPhoneBooks($config['phonebook']);
         $this->logging = new logging($config['logging']);
         $this->refreshPhoneBooks();                             // initial load
@@ -130,7 +132,7 @@ class callrouter
     /**
      * get real name
      *
-     * @param string $timeStamo
+     * @param string $timeStamp
      * @return string
      */
     private function getRealName(string $timeStamp)
@@ -229,7 +231,7 @@ class callrouter
      * @param int $numberLength
      * @return bool
      */
-    private function preWashForeignNumber(int $numberLength)
+    private function parseForeignNumber(int $numberLength)
     {
         $result = true;
         $countryData = [];
@@ -250,16 +252,17 @@ class callrouter
     }
 
     /**
-     * decomposition of atypically composed number
+     * decomposition of atypically composed cellular number consists of:
+     * [AREACODE][COUNTRYCODE(49)][CELLULARPREFIX][NUMBER]
      *
      * @param array $ownArea
      * @return bool
      */
-    private function disassemblyNumber(array $ownArea)
+    private function getVeiledCellular()
     {
         $nationalData = [];
         $number = $this->contactEntry['number'];
-        $rear = "0" . substr($number, $ownArea['length'] + 2);
+        $rear = '0' . substr($number, $this->ownArea['length'] + 2);
         if (
             ($nationalData = $this->phoneTools->getArea($rear)) != false
             && $this->phoneTools->isCellularCode($nationalData['prefix'])
@@ -276,22 +279,48 @@ class callrouter
     }
 
     /**
+     * decomposition of two transmitted numbers (second one bracketed):
+     * [USER_PROVIDED_NUMBER]([NETWORK_PROVIDED_NUMBER])
+     * @see https://avm.de/service/wissensdatenbank/dok/FRITZ-Box-7490/1613_In-Anrufliste-werden-zwei-Rufnummern-fur-einen-Anruf-angezeigt/
+     *
+     * @return void
+     */
+    private function separateBracketedNumber()
+    {
+        $result = false;
+        $networkProvided = substr(strstr($this->contactEntry['number'], '('), 1, -1);
+        $userProvided = trim(strstr($this->contactEntry['number'], '(', true));
+        // adding transmitted number
+        $this->contactEntry['number'] = trim($userProvided);
+        if ($this->isNumberKnown() == false) {
+            $this->mailText[] = $this->setPhoneBookEntry(16, [$userProvided]);
+            $result = true;
+        }
+        // adding bracketed number
+        $this->contactEntry['number'] = $networkProvided;
+        if ($this->isNumberKnown() == false) {
+            $this->mailText[] = $this->setPhoneBookEntry(17, [$networkProvided]);
+            $result = true;
+        }
+
+        return $result;
+    }
+
+    /**
      * checking domestic numbers
      *
      * @param int $numberLength
      * @return bool
      */
-    private function preWashDomesticNumber(int $numberLength)
+    private function parseDomesticNumber(int $numberLength)
     {
         $nationalData = [];
-        $ownArea = [];
         $result = true;
         $number = $this->contactEntry['number'];
         if (substr($number, 0, 1) != '0') {
             // presumably obsolete, since the area code is always transmitted even with local calls?
             $this->setLogging(99, ['No trunk prefix (VAZ). Probably domestic call. No action possible']);
         }
-        $ownArea = $this->phoneTools->getOwnAreaCode();
         if (($nationalData = $this->phoneTools->getArea($number)) == false) {
             // unknown german area code
             $this->mailText[] = $this->setPhoneBookEntry(5);
@@ -301,12 +330,12 @@ class callrouter
             && substr($nationalData['subscriber'], 0, 1) == '0'
         ) {
             $this->mailText[] = $this->setPhoneBookEntry(9);
-        } elseif (
-            // particularly observed case: [AREACODE][49][CELLEUAR_NUMBER]
-            substr($number, 0, $ownArea['length']) == $ownArea['code']
-            && substr($number, $ownArea['length'], 2) == '49'
-        ) {
-            $result = $this->disassemblyNumber($ownArea);
+        } elseif (preg_match('/^' . $this->ownArea['code'] . '49[1][5-7][0-9]+/', $number)) {
+            // particularly observed case: [AREACODE]49[CELLUAR_NUMBER]
+            $result = $this->getVeiledCellular();
+        } elseif (preg_match('/[0][0-9]+\s?\([0][0-9]+\)$/', $number)) {
+            // particularly observed case: [NUMBER]([ALTNUMBER])
+            $result = $this->separateBracketedNumber();
         } elseif ($numberLength < 8 || $numberLength > 14) {
             // see class comment at top of file
             $this->mailText[] = $this->setPhoneBookEntry(13);
@@ -364,7 +393,7 @@ class callrouter
         $this->mailNotify = false;
         $isSortedOut = false;
         $number = $this->callMonitorValues['extern'];
-        if (!$this->isNumberKnown($number)) {
+        if ($this->isNumberKnown() == false) {
             $numberLength = strlen($number);
             if ($numberLength == 0) {
                 $this->setLogging(99, ['Caller uses CLIR - no action possible']);
@@ -373,14 +402,27 @@ class callrouter
                 $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
                 $isForeign = true ? substr($number, 0, 2) === '00' : false;
                 if ($isForeign) {                   // foreign number specific
-                    $isSortedOut = $this->preWashForeignNumber($numberLength);
+                    $isSortedOut = $this->parseForeignNumber($numberLength);
                 } else {                            // domestic numbers specific
-                    $isSortedOut =  $this->preWashDomesticNumber($numberLength);
+                    $isSortedOut =  $this->parseDomesticNumber($numberLength);
                 }
             }
             if (!$isSortedOut) {
                 $this->webSearch($isForeign);
             }
+        }
+    }
+
+    /**
+     * if the outgoing call number has no area code, your own area code will be
+     * added
+     *
+     * @return void
+     */
+    public function enrichLocalNumber()
+    {
+        if (substr($this->callMonitorValues['extern'], 0, 1) != '0') {
+            $this->callMonitorValues['extern'] = $this->ownArea['code'] . $this->callMonitorValues['extern'];
         }
     }
 
@@ -391,13 +433,18 @@ class callrouter
      */
     public function runOutboundValidation()
     {
-        $this->mailNotify = false;
-        $this->mailText[] = $this->setLogging(12, [$this->callMonitorValues['extern']]);
-        $webResult = $this->checkDasOertliche();
-        if (isset($webResult['url'])) {
-            $this->setLogging(11, [$webResult['url']]);
-            $this->mailText[] = $webResult['deeplink'];
-            $this->mailNotify = true;
+        if ($this->isNumberKnown() == false) {
+            $this->enrichLocalNumber();
+            if ($this->isNumberKnown() == false) {
+                $this->mailNotify = false;
+                $this->mailText[] = $this->setLogging(12, [$this->callMonitorValues['extern']]);
+                $webResult = $this->checkDasOertliche();
+                if (isset($webResult['url'])) {
+                    $this->setLogging(11, [$webResult['url']]);
+                    $this->mailText[] = $webResult['deeplink'];
+                    $this->mailNotify = true;
+                }
+            }
         }
     }
 
@@ -421,12 +468,14 @@ class callrouter
     }
 
     /**
-     * returns if number is already known in one of the phone books
+     * returns if number is known in one of the phone books
      *
      * @return bool
      */
-    public function isNumberKnown($number)
+    private function isNumberKnown()
     {
+        $number = $this->contactEntry['number'] ?? $this->callMonitorValues['extern'];
+
         return in_array($number, $this->proofListNumbers);
     }
 
@@ -454,12 +503,14 @@ class callrouter
                 $this->setLogging(99, [$msg]);
             }
         }
+        $this->mailNotify = false;
+        $this->contactEntry = [];
     }
 
     /**
      * setting call monitor values for debugging purposes
      *
-     * @return void
+     * @return array
      */
     public function setDebugStream()
     {

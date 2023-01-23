@@ -67,6 +67,10 @@ class logging
             $message = sprintf('Caller transmits an unusual number combination. Added to spam phone book #%s', $infos[1]);
         } elseif ($stringID == 15) {
             $message = sprintf('Derived actual phone number: %s Added to spam phone book #%s', $infos[2], $infos[1]);
+        } elseif ($stringID == 16) {
+            $message = sprintf('User provided phone number: %s Added to spam phone book #%s', $infos[2], $infos[1]);
+        } elseif ($stringID == 17) {
+            $message = sprintf('Network provided phone number: %s Added to spam phone book #%s', $infos[2], $infos[1]);
         } elseif ($stringID == 99) {
             $message = $infos[0];
         }

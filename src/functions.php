@@ -16,15 +16,13 @@ function callRouting(array $config, array $testNumbers = [])
     $callRouter = new callrouter($config, $testNumbers);
     while (true) {
         $values = $callRouter->getCallMonitorStream();
-        // $values = $callRouter->setDebugStream();    // uncomment for debugging
+        // uncomment next line for debugging
+        // $values = $callRouter->setDebugStream();
         if ($values['type'] == 'RING') {                        // inbound call
             // start test case injection (if you use the -t option)
             empty($testNumbers) ?: $callRouter->getTestInjection();
             $callRouter->runInboundValidation();    // central validation routine
-        } elseif (
-            $values['type'] == 'CALL'
-            && !$callRouter->isNumberKnown($values['extern'])
-            ) {
+        } elseif ($values['type'] == 'CALL') {
             $callRouter->runOutboundValidation();
         } elseif ($values['type'] != null) {
             $callRouter->setLogging(99, [$values['type']]);
