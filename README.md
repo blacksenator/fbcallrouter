@@ -265,7 +265,7 @@ FRITZ!Box, FRITZ!fon, FRITZ!OS are trademarks of [AVM](https://avm.de/). This so
 
 ## Improvements
 
-As ever this program started with only a few lines of code just to play with the callmonitor interface provided and to figure out how it works...
+As ever, this program [started with only a few lines of code](https://www.ip-phone-forum.de/threads/howto-werbeanrufe-automatisch-beenden-lassen-mit-freetz.298448/post-2309645) just to play with the callmonitor interface provided and to figure out how it works...
 
 ...than more and more ideas came to my mind how this interface could solve some of my needs.
 

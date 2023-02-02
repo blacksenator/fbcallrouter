@@ -85,13 +85,23 @@ class callmonitor
             return $this->parseCallString($output);
         }
 
-        return ['type' => null];
+        return [
+            'extern' => null,
+            'type'   => null,
+        ];
     }
 
+
     /**
-     * parse a string from callmonitor socket output
-     * e.g.: "01.01.20 10:10:10;RING;0;01701234567;987654;SIP0;\r\n"
-     * or with less parameters: "18.11.12 00:13:26;DISCONNECT;0;0;\r\n"
+     * parse a string from call monitor socket output. Four different strings
+     * are known:
+     * timestamp;CALL;connectionID;extension;MSN;extern;
+     * timestamp;RING;connectionID;extern;MSN;
+     * timestamp;CONNECT;connectionID;extension;extern/MSN;
+     * timestamp;DISCONNECT;connectionID;duration;
+     * e.g.
+     * "01.01.20 10:10:10;RING;0;01701234567;987654;SIP0;\r\n"
+     * "18.11.12 00:13:26;DISCONNECT;0;7;\r\n"
      *
      * @param string $line
      * @return array $result
@@ -100,14 +110,36 @@ class callmonitor
     {
         $params = explode(';', str_replace(';\\r\\n', '', $line));
 
-        return [
+        $result = [
             'timestamp' => $params[0],
             'type'      => $params[1],
             'conID'     => $params[2],
-            'extern'    => $params[3],
-            'intern'    => $params[4] ?? "",
-            'device'    => $params[5] ?? ""
         ];
+        if ($params[1] == 'RING') {
+            $result += [
+                'extern'    => $params[3],
+                'intern'    => $params[4],
+                'device'    => $params[5],
+            ];
+        } elseif ($params[1] == 'CALL') {
+            $result += [
+                'extension' => $params[3],
+                'intern'    => $params[4],
+                'extern'    => $params[5],
+                'device'    => $params[6],
+            ];
+        } elseif ($params[1] == 'CONNECT') {
+            $result += [
+                'extension' => $params[3],
+                'number'    => $params[4],
+            ];
+        } else {                                                // DISCONNECT
+            $result += [
+                'duration' => $params[3],
+            ];
+        }
+
+        return $result;
     }
 
     /**

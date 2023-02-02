@@ -331,7 +331,7 @@ class dialercheck
                 return false;
             }
         }
-        if ($rawXML->xpath('//div[@class="nonumber01"]')) {         // unbekannt
+        if ($rawXML->xpath('//div[@class="nonumber01"]')) {         // unknown
             return false;
         }
         if ($result = $rawXML->xpath('//div[@class="nonumber"]')) { // alternative

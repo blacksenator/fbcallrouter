@@ -35,6 +35,9 @@ class phonetools
             '169' => 'Cityruf/Pager',
             '18'  => 'Service-Dienste',
             '190' => 'Mehrwertdienste', */
+            '3212' => 'nationale Teilnehmernummer',
+            '3221' => 'nationale Teilnehmernummer',
+            '3222' => 'nationale Teilnehmernummer',
             '700' => 'persönliche Rufnummer',
             '800' => 'Mehrwertdienste',
         /*  '900' => 'Mehrwertdienste',
@@ -96,16 +99,6 @@ class phonetools
             'code'   => $this->ownAreaCode,
             'length' => strlen($this->ownAreaCode)
         ];
-    }
-
-    /**
-     * returns time of next update
-     *
-     * @return int
-     */
-    public function getNextPhoneBookUpdate()
-    {
-        return $this->nextUpdate;
     }
 
     /**
