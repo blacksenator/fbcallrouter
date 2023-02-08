@@ -51,8 +51,7 @@ class phonetools
         $cellular = [],                                     // cellular prefixes
         $countryCodes = [],                                     // country codes
         $ownAreaCode,
-        $fritzBoxPhoneBooks = [],
-        $nextUpdate = 0;
+        $fritzBoxPhoneBooks = [];
 
     /**
      * @param array $config
@@ -61,11 +60,21 @@ class phonetools
     public function __construct(array $fritzBox)
     {
         $this->fritzContact = new x_contact($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
-        $this->fritzBoxPhoneBooks = explode(',', $this->fritzContact->getPhonebookList());
+        $this->fritzBoxPhoneBooks = $this->getPhonebookList();
         $this->fritzVoIP = new x_voip($fritzBox['url'], $fritzBox['user'], $fritzBox['password']);
         $this->ownAreaCode = $this->fritzVoIP->getVoIPCommonAreaCode();
         $this->getPhoneCodes();
         $this->getCountryCodes();
+    }
+
+    /**
+     * returns list of phone books
+     *
+     * @return array
+     */
+    public function getPhoneBookList()
+    {
+        return explode(',', $this->fritzContact->getPhonebookList());
     }
 
     /**
@@ -79,11 +88,11 @@ class phonetools
     }
 
     /**
-     * get a fresh client with new SID
+     * get a fresh x_contact client with new SID
      *
      * @return void
      */
-    public function refreshClient()
+    public function refreshContactClient()
     {
         $this->fritzContact->getClient();
     }
@@ -104,16 +113,19 @@ class phonetools
     /**
      * checks phone book indices against list of phone books from FRITZ!Box
      *
-     * @param array $phoneBooks
+     * @param array $phoneBooks to proof
      * @return void
      */
     public function checkListOfPhoneBooks(array $phoneBooks)
     {
+        $message = '';
         foreach ($phoneBooks as $phoneBook) {
             if (!in_array($phoneBook, $this->fritzBoxPhoneBooks)) {
-                $message = sprintf('The phonebook #%s does not exist on the FRITZ!Box!', $phoneBook);
-                throw new \Exception($message);
+                $message = sprintf('Could not find phone book #%s on FRITZ!Box!', $phoneBook);
             }
+        }
+        if (!empty($message)) {
+            throw new \Exception($message);
         }
     }
 
@@ -123,7 +135,7 @@ class phonetools
      * @param int $phonebookID
      * @return array
      */
-    private function getPhoneNumbers(int $phonebookID = 0)
+    public function getPhoneNumbers(int $phonebookID = 0)
     {
         $phoneBook = $this->fritzContact->getPhonebook($phonebookID);
         if ($phoneBook == false) {
@@ -131,22 +143,6 @@ class phonetools
         }
 
         return $this->fritzContact->getListOfPhoneNumbers($phoneBook);
-    }
-
-    /**
-     * returns phone numbers from phone books
-     *
-     * @param array $phoneBooks
-     * @return array $phoneBookNumbers
-     */
-    public function getPhoneBookNumbers(array $phoneBooks = [0])
-    {
-        $numbers = [];
-        foreach ($phoneBooks as $phoneBook) {
-            $numbers = array_merge($numbers, $this->getPhoneNumbers($phoneBook));
-        }
-
-        return $numbers;
     }
 
     /**

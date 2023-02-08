@@ -235,7 +235,7 @@ RNB = numbers for mobile services. The BNetzA do not provide a list for download
 
 The currently used ones were transferred to the `./assets` directory as `$countryCode` in `countrycode.php`. The list was mainly compiled from information from [wikipedia](https://de.wikipedia.org/wiki/L%C3%A4ndervorwahlliste_sortiert_nach_Nummern).
 
-## Does the programm works propperly?
+## Does the programm works propperly? Troubleshooting
 
 First of all: of course the program can contain bugs and not work as expected. If you are convinced, please open an issue here.
 In addition, it can of course be more due to the selected settings for the configuration of the `filter`.

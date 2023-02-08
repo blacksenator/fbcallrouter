@@ -31,9 +31,9 @@ class callrouter
         ONEDAY = 86400,                                             // seconds
         DBGSTRM = [                             // values for debugging purposes
             'timestamp' => '',                  // will be filled automatically
-            'type'      => 'CALL',                              // or 'CALL'
+            'type'      => 'RING',                              // or 'CALL'
             'conID'     => '0',                                 // not in use
-            'extern'    => '05151796288',          // testnumber
+            'extern'    => '00000000',          // testnumber
             'intern'    => '0000000',                           // MSN
             'device'    => 'SIP0'                               // not in use
         ];
@@ -64,6 +64,8 @@ class callrouter
 
     public function __construct(array $config, array $testNumbers = [])
     {
+        $this->logging = new logging($config['logging']);
+        $this->setLogging(99, ['Start the fbcallrouter initialization process']);
         $this->testNumbers = $testNumbers;
         $this->testCases = count($this->testNumbers);
         $this->contactConfig = $config['contact'];
@@ -72,7 +74,6 @@ class callrouter
         $this->phoneTools = new phonetools($config['fritzbox']);
         $this->ownArea = $this->phoneTools->getOwnAreaCode();
         $this->setPhoneBooks($config['phonebook']);
-        $this->logging = new logging($config['logging']);
         $this->refreshPhoneBooks();                             // initial load
         $this->callMonitor = new callmonitor($this->phoneTools->getURL());
         $this->dialerCheck = new dialercheck($config['filter']);
@@ -81,6 +82,18 @@ class callrouter
         }
         echo 'On guard...' . PHP_EOL;
         $this->setLogging(0, [$this->callMonitor->getSocketAdress()]);
+    }
+
+    /**
+     * sorting and arranging list of phone books
+     *
+     * @return void
+     */
+    private function sortProofList()
+    {
+        $this->proofList = array_unique($this->proofList);
+        asort($this->proofList);
+        array_values($this->proofList);
     }
 
     /**
@@ -98,6 +111,7 @@ class callrouter
         if ($this->newList >= 0) {
             $this->proofList[] = $this->newList;
         }
+        $this->sortProofList();
         $this->phoneTools->checkListOfPhoneBooks($this->proofList);
         $refresh = $config['refresh'] ?? 1;
         $this->elapse = $refresh < 1 ? self::ONEDAY : $refresh * self::ONEDAY;
@@ -145,6 +159,29 @@ class callrouter
     }
 
     /**
+     * returns phone numbers from phone books
+     *
+     * @param array $phoneBooks
+     * @return array $phoneBookNumbers
+     */
+    private function getPhoneBookNumbers(array $phoneBooks = [0])
+    {
+        $phoneNumbers = [];
+        foreach ($phoneBooks as $phoneBook) {
+            if (empty($numbers = $this->phoneTools->getPhoneNumbers($phoneBook))) {
+                $this->setLogging(8, [$phoneBook]);
+            } else {
+                $phoneNumbers += $numbers;
+                date_default_timezone_set('Europe/Berlin');
+                $this->setLogging(1, [$phoneBook, date('d.m.Y H:i:s', $this->nextUpdate)]);
+            }
+        }
+
+        return $phoneNumbers;
+    }
+
+
+    /**
      * returns reread phone book numbers
      *
      * @return void
@@ -153,10 +190,8 @@ class callrouter
     {
         if (time() > $this->nextUpdate) {
             $this->nextUpdate = time() + $this->elapse;
-            $this->proofListNumbers = $this->phoneTools->getPhoneBookNumbers($this->proofList);
-            $listPhoneBooks = implode(', ', $this->proofList);
-            date_default_timezone_set('Europe/Berlin');
-            $this->setLogging(1, [$listPhoneBooks, date('d.m.Y H:i:s', $this->nextUpdate)]);
+            $this->phoneTools->refreshContactClient();
+            $this->proofListNumbers = $this->getPhoneBookNumbers($this->proofList);
         }
     }
 

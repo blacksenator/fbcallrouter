@@ -38,7 +38,7 @@ class logging
         if ($stringID == 0) {
             $message = sprintf('Guarding started: listen to FRITZ!Box call monitor at %s', $infos[0]);
         } elseif ($stringID == 1) {
-            $message = sprintf('Phone books %s (re-)loaded; next refresh: %s', $infos[0], $infos[1]);
+            $message = sprintf('Phone book %s (re-)loaded; next refresh: %s', $infos[0], $infos[1]);
         } elseif ($stringID == 2) {
             $message = sprintf('CALL IN from number %s to MSN %s', $infos[0], $infos[1]);
         } elseif ($stringID == 3) {
@@ -52,7 +52,7 @@ class logging
         } elseif ($stringID == 7) {
             $message = sprintf('Caller has a rating of %s out of 9 and %s valuations.', $infos[0], $infos[1]);
         } elseif ($stringID == 8) {
-            $message = sprintf('Status: phonebook %s refreshed; next refresh: %s', $infos[0], $infos[1]);
+            $message = sprintf('Phone book %s could not be read', $infos[0]);
         } elseif ($stringID == 9) {
             $message = sprintf('Caller is using an illegal subscriber number! Added to spam phone book #%s', $infos[1]);
         } elseif ($stringID == 10) {
