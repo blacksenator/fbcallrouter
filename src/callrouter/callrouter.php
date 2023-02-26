@@ -46,6 +46,7 @@ class callrouter
         $blackList,                                 // index of spam phone book
         $newList,           // index of phone book for valid numbers (optional)
         $proofListNumbers = [],                             // all known numbers
+        $centralNumbers = [],
         $testNumbers = [],                                  // test case numbers
         $testCases = 0,                                 // number of test cases
         $testCounter = 0,
@@ -180,6 +181,23 @@ class callrouter
         return $phoneNumbers;
     }
 
+    /**
+     * returns the central numbers
+     *
+     * @param array $numbers
+     * @return array $centralNumbers
+     */
+    private function getCentralNumbers(array $numbers)
+    {
+      //  $centralNumbers = [];
+        foreach ($numbers as $key => $number) {
+            if (substr($number, -1) == '*') {
+                $centralNumbers[] = substr($number, 0, -1);
+            }
+        }
+
+        return $centralNumbers;
+    }
 
     /**
      * returns reread phone book numbers
@@ -192,6 +210,7 @@ class callrouter
             $this->nextUpdate = time() + $this->elapse;
             $this->phoneTools->refreshContactClient();
             $this->proofListNumbers = $this->getPhoneBookNumbers($this->proofList);
+            $this->centralNumbers = $this->getCentralNumbers($this->proofListNumbers);
         }
     }
 
@@ -488,14 +507,36 @@ class callrouter
     }
 
     /**
-     * returns if number is known in one of the phone books
+     * returns true if a number starts with a known central number
+     *
+     * @param string $number
+     * @return bool
+     */
+    private function isDirectInwardDial(string $number)
+    {
+        foreach ($this->centralNumbers as $centralNumber) {
+            if (strpos($number, $centralNumber) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * returns if number is known in one of the phone books or begins with an
+     * already known central number
      *
      * @param string $number
      * @return bool
      */
     private function isNumberKnown(string $number)
     {
-        return in_array($number, $this->proofListNumbers);
+        if (in_array($number, $this->proofListNumbers)) {
+            return true;
+        }
+
+        return $this->isDirectInwardDial($number);
     }
 
     /**

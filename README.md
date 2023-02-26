@@ -19,7 +19,7 @@ If you already use an older version please refer to the [update section](#update
 
 For an incoming call a cascaded check takes place:
 
-* First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). Of course, these known telephone numbers are not analyzed further.
+* First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). This also includes [central numbers](https://github.com/blacksenator/carddav2fb/wiki/Rufnummern-mit-wildcards) used, whose various extensions are defined with '*' in the phone book. Of course, all these known telephone numbers are not analyzed any further.
 
 * If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections. If not, then foreign numbers are screened to see whether they exceed or fall short of the expected lengths or whether they transmit country codes that are not (or no longer) used.
 
