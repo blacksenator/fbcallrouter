@@ -37,9 +37,9 @@ For an incoming call a cascaded check takes place:
 
 ## Requirements
 
-* PHP >= 7.0 (php-cli, php-curl, php-mbstring, php-soap, php-xml)
+* PHP >= 7.3 (php-cli, php-curl, php-mbstring, php-soap, php-xml)
 * callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
-* Composer (follow the installation guide at <https://getcomposer.org/download/)>
+* Composer (follow the [installation guide](https://getcomposer.org/download/))>
 
 ## Installation
 
@@ -73,7 +73,7 @@ If you want to add previously unknown but trustworthy  umbers as contacts, you c
 
 #### FRITZ!Box user
 
-The programm accessed the Fritz!Box via TR-064. Make sure that the user you choose in configuration (see [next topic](#configuration)) is granted for this interface. The proposed user `dslf_config` is the default user when logging in with a password and without user selection and has the required rights!
+The programm accessed the Fritz!Box via TR-064. Make sure that the user you choose in configuration (see [next topic](#configuration)) is granted for this interface. The user needs authorization for "voice messages, fax messages, FRITZ!App Fon and the call list"!
 
 ### Configuration
 

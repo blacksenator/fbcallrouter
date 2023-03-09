@@ -4,7 +4,7 @@ namespace blacksenator\callrouter;
 
 /** class callmonitor
  *
- * provides function to access the callmonitor at a FRITZ!Box via Port 1022.
+ * provides function to access the call monitor at a FRITZ!Box via Port 1022.
  * Observations have shown that the socket connection needs to be refreshed
  * every two hours if it is constantly being eavesdropped
  *
@@ -15,7 +15,7 @@ namespace blacksenator\callrouter;
 class callmonitor
 {
     const
-        CALLMONITORPORT = '1012',           // FRITZ!Box port for callmonitor
+        CALLMONITORPORT = '1012',           // FRITZ!Box port for call monitor
         REFRESHTIME = 7200;                             // two hours in seconds
 
     private
@@ -36,7 +36,7 @@ class callmonitor
     }
 
     /**
-     * return the FRITZ!Box callmonitor socket
+     * return the FRITZ!Box call monitor socket
      *
      * @param int $timeout
      * @return void
@@ -45,7 +45,7 @@ class callmonitor
     {
         $stream = stream_socket_client($this->socketAdress, $errno, $errstr);
         if (!$stream) {
-            $message = sprintf("Can't reach the callmonitor port! Error: %s (%s)!", $errstr, $errno);
+            $message = sprintf("Can't reach the call monitor port! Error: %s (%s)!", $errstr, $errno);
             throw new \Exception($message);
         }
         $socket = socket_import_stream($stream);

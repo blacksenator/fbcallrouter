@@ -6,7 +6,7 @@ namespace blacksenator\callrouter;
  *
  * delivers simple e-mail function based on PHPMailer
  *
- * @copyright (c) 2022 Volker Püschel
+ * @copyright (c) 2022 - 2023 Volker Püschel
  * @license MIT
  */
 
@@ -14,8 +14,6 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class infomail
 {
-    const EMAIL_SBJCT = 'fbcallrouter traced a call from number ';
-
     private $mail;
 
     public function __construct(array $account)
@@ -38,17 +36,19 @@ class infomail
     /**
      * send email
      *
-     * @param string $number
+     * @param array $callMonitorValues
      * @param array $protocoll
      * @return string|void
      */
-    public function sendMail(string $number, array $protocol)
+    public function sendMail(array $callMonitorValues, array $protocol)
     {
+        $number = $callMonitorValues['extern'];
+        $way = 'from' ? $callMonitorValues['type'] == 'RING' : 'to';
         $body = nl2br('The following results and actions have been recorded:' . PHP_EOL . PHP_EOL);
         foreach ($protocol as $lines) {
             $body .= nl2br($lines . PHP_EOL);
         }
-        $this->mail->Subject = self::EMAIL_SBJCT . $number;     //Set the subject line
+        $this->mail->Subject = sprintf('fbcallrouter traced a call %s number %s', $way, $number);
         $this->mail->Body = $body;
         $this->mail->isHTML(true);
         if (!$this->mail->send()) {     // send the message, check for errors

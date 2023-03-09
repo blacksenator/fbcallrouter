@@ -215,7 +215,7 @@ class callrouter
     }
 
     /**
-     * getting the array from the callmonitor socket stream
+     * getting the array from the call monitor socket stream
      *
      * @return array $this->callMonitorValues
      */
@@ -296,6 +296,9 @@ class callrouter
         } elseif (($countryData = $this->phoneTools->getCountry($number)) == false) {
             // unknown country code
             $this->mailText[] = $this->setPhoneBookEntry(3);
+        } elseif (substr($countryData['national'], 0) == '0'){
+            // illegal start of area code
+            $this->mailText[] = $this->setPhoneBookEntry(5);
         } else {
             $this->callMonitorValues += $countryData;
             $result = false;
@@ -341,7 +344,7 @@ class callrouter
     private function separateBracketedNumber(string $number)
     {
         $result = false;
-        $networkProvided = substr(strstr($number, '('), 1, -1);
+        $networkProvided = preg_replace('/[^0-9]/', '', substr(strstr($number, '('), 1, -1));
         $userProvided = trim(strstr($number, '(', true));
         // adding transmitted number
         if ($this->isNumberKnown($userProvided) == false) {
@@ -386,7 +389,7 @@ class callrouter
         } elseif (preg_match('/^' . $this->ownArea['code'] . '49[1][5-7][0-9]+/', $number)) {
             // particularly observed case: [AREACODE]49[CELLUAR_NUMBER]
             $result = $this->getVeiledCellular($number);
-        } elseif (preg_match('/[0][0-9]+\s?\([0][0-9]+\)$/', $number)) {
+        } elseif (strpos($number, '(') !== false) {
             // particularly observed case: [NUMBER]([ALTNUMBER])
             $result = $this->separateBracketedNumber($number);
         } elseif ($numberLength < 8 || $numberLength > 14) {
@@ -446,7 +449,7 @@ class callrouter
         $this->mailNotify = false;
         $isSortedOut = false;
         $number = $this->callMonitorValues['extern'];
-        if ($this->isNumberKnown($number) == false) {
+        if ($this->isNumberKnown($number) === false) {
             $numberLength = strlen($number);
             if ($numberLength == 0) {
                 $this->setLogging(99, ['Caller uses CLIR - no action possible']);
@@ -558,7 +561,7 @@ class callrouter
     public function sendMail()
     {
         if (isset($this->infoMail) && $this->mailNotify) {
-            $msg = $this->infoMail->sendMail($this->callMonitorValues['extern'], $this->mailText);
+            $msg = $this->infoMail->sendMail($this->callMonitorValues, $this->mailText);
             if ($msg <> null) {
                 $this->setLogging(99, [$msg]);
             }
