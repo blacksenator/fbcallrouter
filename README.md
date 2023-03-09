@@ -21,7 +21,7 @@ For an incoming call a cascaded check takes place:
 
 * First, it is checked, whether the number is **already known** in your telephone books (`'whitelist'`) and (`'blacklist'`) or (`'newlist'`). This also includes [central numbers](https://github.com/blacksenator/carddav2fb/wiki/Rufnummern-mit-wildcards) used, whose various extensions are defined with '*' in the phone book. Of course, all these known telephone numbers are not analyzed any further.
 
-* If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections. If not, then foreign numbers are screened to see whether they exceed or fall short of the expected lengths or whether they transmit country codes that are not (or no longer) used.
+* If unknown, it is checked if it is a **foreign number**. If you have set (`'blockForeign'`) the number will be direct transferred to the corresponding phone book (`'blacklist'`) for future rejections. If not, then foreign numbers are screened to see whether they exceed or fall short of the expected lengths, whether they transmit country codes that are not (or no longer) used or if area code starts with invalid "0" (zero).
 
 * The following screenings are carried out for **domestic numbers**, which are essentially aimed at "CLIP - no screening":
   * transmission of a [**unvalid area code** ONB](#onb) or [cellular code](#rnb)
@@ -39,7 +39,7 @@ For an incoming call a cascaded check takes place:
 
 * PHP >= 7.3 (php-cli, php-curl, php-mbstring, php-soap, php-xml)
 * callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
-* Composer (follow the [installation guide](https://getcomposer.org/download/))>
+* Composer (follow the [installation guide](https://getcomposer.org/download/))
 
 ## Installation
 
@@ -55,7 +55,7 @@ cd fbcallrouter
 Install composer (see <https://getcomposer.org/download/> for newer instructions):
 
 ```console
-composer install --no-dev --no-suggest
+composer install --no-dev
 ```
 
 [Edit](#configuration) the `config.example.php` and save as `config.php` or use an other name of your choice (but than keep in mind to use the -c option to define your renamed file)
@@ -269,9 +269,11 @@ As ever, this program [started with only a few lines of code](https://www.ip-pho
 
 ...than more and more ideas came to my mind how this interface could solve some of my needs.
 
-If you have an idea for a useful improvement or addition, then please open an issue.
-
 As I have already written in the [fritzsoap documentation](https://github.com/blacksenator/fritzsoap#wishes), it would be an enormous relief **if AVM would provide functionality to terminate incoming calls**, just as FRITZ!OS itself does it with the handling of phone numbers to be blocked. The entry of more and more numbers in corresponding blacklists could be omitted or reduced.
+
+## Feedback
+
+If you enjoy this software, then I would be happy to receive your feedback, also in the form of user comments and descriptions of your experiences, e.g. in the [IP Phone Forum](https://www.ip-phone-forum.de/threads/fbcallrouter-extended-call-routing-spam-filter-for-fritz-box.303211/). This puts the user community on a broader basis and their experiences and functional ideas can be incorporated into further development. In the end, these features will benefit everyone.
 
 ## License
 
