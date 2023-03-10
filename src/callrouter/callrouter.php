@@ -449,23 +449,22 @@ class callrouter
         $this->mailNotify = false;
         $isSortedOut = false;
         $number = $this->callMonitorValues['extern'];
-        if ($this->isNumberKnown($number) === false) {
-            $numberLength = strlen($number);
-            if ($numberLength == 0) {
-                $this->setLogging(99, ['Caller uses CLIR - no action possible']);
-            } else {
-                $this->setContactEntry($this->blackList, $number);
-                $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
-                $isForeign = true ? substr($number, 0, 2) === '00' : false;
-                if ($isForeign) {                   // foreign number specific
-                    $isSortedOut = $this->parseForeignNumber($number, $numberLength);
-                } else {                            // domestic numbers specific
-                    $isSortedOut =  $this->parseDomesticNumber($number, $numberLength);
-                }
+        $numberLength = strlen($number);
+        if ($numberLength == 0) {
+            $this->setLogging(99, ['Caller uses CLIR - no action possible']);
+            $isSortedOut = true;
+        } elseif ($this->isNumberKnown($number) === false) {
+            $this->setContactEntry($this->blackList, $number);
+            $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
+            $isForeign = true ? substr($number, 0, 2) === '00' : false;
+            if ($isForeign) {                   // foreign number specific
+                $isSortedOut = $this->parseForeignNumber($number, $numberLength);
+            } else {                            // domestic numbers specific
+                $isSortedOut =  $this->parseDomesticNumber($number, $numberLength);
             }
-            if (!$isSortedOut) {
-                $this->webSearch($number, $isForeign);
-            }
+        }
+        if (!$isSortedOut) {
+            $this->webSearch($number, $isForeign);
         }
     }
 

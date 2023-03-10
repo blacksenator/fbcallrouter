@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * List of telephone country codes according to Wikipedia
+ *
+ * @see https://en.wikipedia.org/wiki/List_of_country_calling_codes
+ *
+ * In order to enable a more precise identification, two different country areas
+ * (001 and 007) have been defined with known area codes. This allows Canada to
+ * be distinguished from the USA as well as Russia and Russian-occupied
+ * territories (Stand with Ukaine!).
+ */
+
 $countryCodes = [
     '1' => 'USA',
     '1204' => 'Kanada',
@@ -150,7 +161,7 @@ $countryCodes = [
     '377' => 'Monaco',
     '378' => 'San Marino',
     '379' => 'Vatikanstadt',
-    '380' => 'Ukraine',
+    '380' => 'Ukraine',                                 // stand with Ukraine
     '381' => 'Serbien',
     '382' => 'Montenegro',
     '383' => 'Kosovo',
@@ -230,7 +241,7 @@ $countryCodes = [
     '730' => 'Russland',
     '734' => 'Russland',
     '735' => 'Russland',
-    '7365' => 'Autonome Republik Krim (Ukraine)',
+    '7365' => 'Autonome Republik Krim (Ukraine)',       // stand with Ukraine
     '738' => 'Russland',
     '739' => 'Russland',
     '740' => 'Russland',
@@ -263,7 +274,7 @@ $countryCodes = [
     '7866' => 'Russland',
     '7867' => 'Russland',
     '7868' => 'Russland',
-    '7869' => 'Autonome Republik Krim (Ukraine)',
+    '7869' => 'Autonome Republik Krim (Ukraine)',       // stand with Ukraine
     '787' => 'Russland',
     '790' => 'Russland',
     '791' => 'Russland',
@@ -287,7 +298,7 @@ $countryCodes = [
     '7974' => 'Russland',
     '7975' => 'Russland',
     '7976' => 'Russland',
-    '7978' => 'Autonome Republik Krim (Ukraine)',
+    '7978' => 'Autonome Republik Krim (Ukraine)',       // stand with Ukraine
     '7979' => 'Russland',
     '800' => 'Internationale Free-Phone-Dienste',
     '81' => 'Japan',

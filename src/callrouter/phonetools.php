@@ -270,12 +270,12 @@ class phonetools
 
     /**
      * return the country code and country from a phone number:
-     * ['countrycode']  => country code incl. national access code if necessary
+     * ['countrycode']  => country code
      * ['country']      => country name
      * ['national']     => NSN: national significant number
      * @see https://de.wikipedia.org/wiki/Rufnummer#/media/Datei:Telefonnummernaufbau.png
      *
-     * @param string $phoneNumber to extract the country code from
+     * @param string $phoneNumber to identify the country code from
      * @return array|bool $country code data or false
      */
     public function getCountry(string $phoneNumber)
@@ -283,10 +283,16 @@ class phonetools
         for ($i = 4; $i > 0; $i--) {
             $needle = substr($phoneNumber, 2, $i);
             if (isset($this->countryCodes[$needle])) {
+                $countryCode = '00' . $needle;
+                if ($this->countryCodes[$needle] == 'Kanada') {
+                    $countryCode = '001';
+                } elseif (substr($needle, 0, 1) == '7') {
+                    $countryCode = '007';
+                }
                 return [
-                    'countrycode' => $needle,
+                    'countrycode' => $countryCode,
                     'country'     => $this->countryCodes[$needle],
-                    'national'    => substr($phoneNumber, 2 + $i),
+                    'national'    => substr($phoneNumber, strlen($countryCode)),
                 ];
             }
         }

@@ -2,7 +2,7 @@
 
 <img align="right" src="assets/washing.png"/>
 
-The program is **trying to identify spam calls**. So it is listen to the [FRITZ!Box](#disclaimer) callmonitor and does several wash cycles to figure out whether it is spam or not.
+The program is **trying to identify spam calls**. So it is listen to the [FRITZ!Box](#disclaimer) call monitor and does several wash cycles to figure out whether it is spam or not.
 
 ## Release notes
 
@@ -35,10 +35,12 @@ For an incoming call a cascaded check takes place:
 * Finally, of course, there is the possibility that the caller is known in a positive sense and can be identified via a public telephone book ([Das Örtliche](https://www.dasoertliche.de/rueckwaertssuche/)). Then he/she/it is optionally entered in a dedicated phone book (`'newlist'`) with the determined name.
 **This feature is also used for outgoing calls to unknown numbers!**
 
+* In addition, the program offers the option of being **informed** about unknown incoming (and outgoing) phone numbers **by email**. In particular, the information on the extent to which the caller could be identified and possibly added to one of the telephone books is convinient without having to be able to trace this using the caller list in the FRITZ!Box or in the logging file.
+
 ## Requirements
 
 * PHP >= 7.3 (php-cli, php-curl, php-mbstring, php-soap, php-xml)
-* callmonitor (port 1012) is open - if not: dial `#96*5*` to open it
+* call monitor (port 1012) is open - if not: dial `#96*5*` to open it
 * Composer (follow the [installation guide](https://getcomposer.org/download/))
 
 ## Installation
@@ -69,7 +71,7 @@ Then you have to [link this phone book for call handling](https://avm.de/service
 
 #### Phone book for trustworthy new numbers
 
-If you want to add previously unknown but trustworthy  umbers as contacts, you can do this optionally: e.g. in a separate phone book that you have created in the FRITZ!Box. YHowever, you can also have these additions added to your standard telephone book..
+If you want to add previously unknown but trustworthy  umbers as contacts, you can do this optionally: e.g. in a separate phone book that you have created in the FRITZ!Box. However, you can also have these additions added to your standard telephone book..
 
 #### FRITZ!Box user
 
@@ -104,11 +106,11 @@ If the number is in your phone book, nothing should happen anyway (on whitelist)
 Otherwise: your mobile phone number is not a foreign number, the [ONB](#onb)/[RNB](#rnb) is correct and you certainly do not have a bad entry in online directories. Therefore these tests should not lead to any sorting out.
 Press `CTRL+C` to terminate the programm.
 
-If logging is enabled (which is highly recommended for this test), than `nano callrouter_logging.txt` will show you what happend at the callmonitor interface.
+If logging is enabled (which is highly recommended for this test), than `nano callrouter_logging.txt` will show you what happend at the call monitor interface.
 
 #### 2. Integration test
 
-There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes one after the other for the next calls the FRITZ!Box receives and its callmonitor port will broadcast.
+There are five exemplary `'numbers'` stored in the configuration file with which you can test the wash cycles integratively. You can change these test numbers according to your own ideas and quantity. Starting the programm with the `-t` option, these numbers will be injected as substitutes one after the other for the next calls the FRITZ!Box receives and its call monitor port will broadcast.
 
 It is highly recommended to proceed like this:
 
@@ -259,21 +261,21 @@ when using
 
 the incoming number is transmitted to the provider. Their data protection information must be observed!
 
-## Disclaimer
+## Feedback
 
-FRITZ!Box, FRITZ!fon, FRITZ!OS are trademarks of [AVM](https://avm.de/). This software is in no way affiliated with AVM and only uses the [interfaces published by them](https://avm.de/service/schnittstellen/).
+If you enjoy this software, then I would be happy to receive your feedback, also in the form of user comments and descriptions of your experiences, e.g. in the [IP Phone Forum](https://www.ip-phone-forum.de/threads/fbcallrouter-extended-call-routing-spam-filter-for-fritz-box.303211/). This puts the user community on a broader basis and their experiences and functional ideas can be incorporated into further development. In the end, these features will benefit everyone.
 
 ## Improvements
 
-As ever, this program [started with only a few lines of code](https://www.ip-phone-forum.de/threads/howto-werbeanrufe-automatisch-beenden-lassen-mit-freetz.298448/post-2309645) just to play with the callmonitor interface provided and to figure out how it works...
+As ever, this program [started with only a few lines of code](https://www.ip-phone-forum.de/threads/howto-werbeanrufe-automatisch-beenden-lassen-mit-freetz.298448/post-2309645) just to play with the call monitor interface provided and to figure out how it works...
 
 ...than more and more ideas came to my mind how this interface could solve some of my needs.
 
 As I have already written in the [fritzsoap documentation](https://github.com/blacksenator/fritzsoap#wishes), it would be an enormous relief **if AVM would provide functionality to terminate incoming calls**, just as FRITZ!OS itself does it with the handling of phone numbers to be blocked. The entry of more and more numbers in corresponding blacklists could be omitted or reduced.
 
-## Feedback
+## Disclaimer
 
-If you enjoy this software, then I would be happy to receive your feedback, also in the form of user comments and descriptions of your experiences, e.g. in the [IP Phone Forum](https://www.ip-phone-forum.de/threads/fbcallrouter-extended-call-routing-spam-filter-for-fritz-box.303211/). This puts the user community on a broader basis and their experiences and functional ideas can be incorporated into further development. In the end, these features will benefit everyone.
+FRITZ!Box, FRITZ!fon, FRITZ!OS are trademarks of [AVM](https://avm.de/). This software is **in no way affiliated** with AVM and only uses the [interfaces published by them](https://avm.de/service/schnittstellen/).
 
 ## License
 
