@@ -189,7 +189,7 @@ class callrouter
      */
     private function getCentralNumbers(array $numbers)
     {
-      //  $centralNumbers = [];
+        $centralNumbers = [];
         foreach ($numbers as $key => $number) {
             if (substr($number, -1) == '*') {
                 $centralNumbers[] = substr($number, 0, -1);
