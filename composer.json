@@ -11,10 +11,10 @@
     ],
     "require": {
         "php": "^7.3|^8.0",
-        "symfony/console": "^3.0",
-        "guzzlehttp/guzzle": "^7.0",
-        "phpmailer/phpmailer": "^6.2",
-        "blacksenator/fritzsoap": "^2.1"
+        "symfony/console": "^5.4|^6.2",
+        "guzzlehttp/guzzle": "^7.5",
+        "phpmailer/phpmailer": "^6.8.0",
+        "blacksenator/fritzsoap": "^2.8"
     },
     "autoload": {
         "psr-4": {
@@ -24,6 +24,6 @@
         "files": ["src/functions.php"]
     },
     "require-dev": {
-        "phpunit/phpunit": "^6"
+        "phpunit/phpunit": "^9|^10"
     }
 }
