@@ -172,7 +172,7 @@ class callrouter
             if (empty($numbers = $this->phoneTools->getPhoneNumbers($phoneBook))) {
                 $this->setLogging(8, [$phoneBook]);
             } else {
-                $phoneNumbers += $numbers;
+                $phoneNumbers = array_merge($phoneNumbers, $numbers);
                 date_default_timezone_set('Europe/Berlin');
                 $this->setLogging(1, [$phoneBook, date('d.m.Y H:i:s', $this->nextUpdate)]);
             }
@@ -447,12 +447,11 @@ class callrouter
     public function runInboundValidation()
     {
         $this->mailNotify = false;
-        $isSortedOut = false;
+        $isSortedOut = true;
         $number = $this->callMonitorValues['extern'];
         $numberLength = strlen($number);
         if ($numberLength == 0) {
             $this->setLogging(99, ['Caller uses CLIR - no action possible']);
-            $isSortedOut = true;
         } elseif ($this->isNumberKnown($number) === false) {
             $this->setContactEntry($this->blackList, $number);
             $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
@@ -477,7 +476,7 @@ class callrouter
     {
         $number = $this->callMonitorValues['extern'];
         $message = $this->setLogging(12, [$number]);
-        if ($this->isNumberKnown($number) == false) {
+        if ($this->isNumberKnown($number) === false) {
             $this->mailNotify = false;
             $this->mailText[] = $message;
             $webResult = $this->checkDasOertliche($number);
