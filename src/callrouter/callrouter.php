@@ -182,19 +182,20 @@ class callrouter
     }
 
     /**
-     * returns the central numbers
+     * returns and extracts the central numbers
      *
-     * @param array $numbers
      * @return array $centralNumbers
      */
-    private function getCentralNumbers(array $numbers)
+    private function getCentralNumbers()
     {
         $centralNumbers = [];
-        foreach ($numbers as $key => $number) {
+        foreach ($this->proofListNumbers as $key => $number) {
             if (substr($number, -1) == '*') {
                 $centralNumbers[] = substr($number, 0, -1);
+                unset($this->proofListNumbers[$key]);
             }
         }
+        $this->proofListNumbers = array_values($this->proofListNumbers);
 
         return $centralNumbers;
     }
@@ -210,7 +211,7 @@ class callrouter
             $this->nextUpdate = time() + $this->elapse;
             $this->phoneTools->refreshContactClient();
             $this->proofListNumbers = $this->getPhoneBookNumbers($this->proofList);
-            $this->centralNumbers = $this->getCentralNumbers($this->proofListNumbers);
+            $this->centralNumbers = $this->getCentralNumbers();
         }
     }
 

@@ -7,7 +7,7 @@ $config = [
         'password' => 'xxxxxxxxxx',         // your Fritz!Box user password
     ],
     'phonebook' => [
-        'whitelist' => [0], // phone books to check against if this number is already known (first index = 0!)
+        'whitelist' => [0], // phone books number is already known (first index = 0!)
         'blacklist' => 1,   // phone book in which the spam number should be recorded
         'newlist'   => 0,   // optional: phone book in which the reverse searchable entries should be recorded
         'refresh'   => 1,   // after how many days the phone books should be read again

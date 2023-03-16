@@ -171,11 +171,7 @@ class phonetools
      */
     public function sanitizeNumber(string $number): string
     {
-        if (substr(trim($number), 0, 1) === '+') {  // if number starts with "+" (foreign)
-            $number = '00' . substr($number, 1);    // it will be replaced with 00
-        }
-
-        return preg_replace('/[^0-9\(\)]/', '', $number);       // only digits
+        return $this->fritzContact->sanitizeNumber($number);
     }
 
     /**
