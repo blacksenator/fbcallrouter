@@ -247,7 +247,7 @@ class dialercheck
         $valuation = $rawXML->xpath('//span[@class="rating"]');
         if (count($valuation)) {
             $stars = substr(str_replace('Bewertung: ', '', $valuation[0]), 0, 1);
-            if ($stars > 0) {
+            if (intval($stars) > 0) {
                 $titleParts = explode(' // ', $rawXML->xpath('//title')[0]);
                 if (count($titleParts) == 2) {
                     return [

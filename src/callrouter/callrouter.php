@@ -212,6 +212,8 @@ class callrouter
             $this->phoneTools->refreshContactClient();
             $this->proofListNumbers = $this->getPhoneBookNumbers($this->proofList);
             $this->centralNumbers = $this->getCentralNumbers();
+            // for debugging perposes uncomment the following line
+            // file_put_contents('numbers.txt', print_r($this->proofListNumbers, true));
         }
     }
 
