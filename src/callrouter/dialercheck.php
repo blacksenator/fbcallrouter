@@ -90,8 +90,8 @@ class dialercheck
         $url = self::TELLOWS[1] . $number;
 
         return [
-            'score'    => (string)$rating->score,
-            'comments' => (string)$rating->comments,
+            'score'    => intval($rating->score),
+            'comments' => intval($rating->comments),
             'url'      => $url,
             'deeplink' => $this->getDeepLinkString($url, self::TELLOWS[2]),
         ];
@@ -192,12 +192,12 @@ class dialercheck
             return false;
         }
         if (count($valuation = $rawXML->xpath('//div[@class = "rating-text"]'))) {
-            $stars = str_replace(' von 5 Sternen', '', $valuation[0]->span[0]);
-            if (intval($stars) > 0) {
+            $stars = intval(str_replace(' von 5 Sternen', '', $valuation[0]->span[0]));
+            if ($stars > 0) {
                 $comments = preg_replace('/[^0-9]/', '', $valuation[0]->span[1]);
                 return [
                     'score'    => $this->convertStarsToScore($stars),
-                    'comments' => $comments,
+                    'comments' => intval($comments),
                     'url'      => $url,
                     'deeplink' => $this->getDeepLinkString($url, self::CLVRDLR[1]),
                 ];
@@ -219,14 +219,19 @@ class dialercheck
         if (($rawXML = $this->getWebsiteAsXML($url)) == false) {
             return false;
         }
-        $valuations = $rawXML->xpath('//div[@class = "count"]');
-        if (count($valuations) == 2) {
-            return [
-                'score'    => -0.8 * intval($valuations[1]) + 9,
-                'comments' => (string)$valuations[0],
-                'url'      => $url,
-                'deeplink' => $this->getDeepLinkString($url, self::TELSPIO[1]),
-            ];
+        $title = (string)$rawXML->xpath('//title')[0];
+        $titleParts = explode(' - ', $title);
+        if (count($titleParts) == 3) {
+            $values = [];
+            preg_match_all('/\d+/', $titleParts[2], $values);
+            if (count($values[0]) > 3 && intval($values[0][0]) > 0) {
+                return [
+                    'score'    => -0.8 * intval($values[0][2]) + 9,
+                    'comments' => intval($values[0][1]),
+                    'url'      => $url,
+                    'deeplink' => $this->getDeepLinkString($url, self::TELSPIO[1]),
+                ];
+            }
         }
 
         return false;
@@ -246,13 +251,13 @@ class dialercheck
         }
         $valuation = $rawXML->xpath('//span[@class="rating"]');
         if (count($valuation)) {
-            $stars = substr(str_replace('Bewertung: ', '', $valuation[0]), 0, 1);
-            if (intval($stars) > 0) {
+            $stars = intval(substr(str_replace('Bewertung: ', '', $valuation[0]), 0, 1));
+            if ($stars > 0) {
                 $titleParts = explode(' // ', $rawXML->xpath('//title')[0]);
                 if (count($titleParts) == 2) {
                     return [
                         'score'    => $this->convertStarsToScore($stars),
-                        'comments' => str_replace(' Bewertungen', '', $titleParts[1]),
+                        'comments' => intval(str_replace(' Bewertungen', '', $titleParts[1])),
                         'url'      => $url,
                         'deeplink' => $this->getDeepLinkString($url, self::WRHTANG[1]),
                     ];
@@ -289,31 +294,46 @@ class dialercheck
      */
     public function getRating(string $number)
     {
+        $proofedRating['score'] = null;
         if ($rating = $this->getWerRuftInfoRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
+            } else {
+                $proofedRating = $rating;
             }
         }
         if ($rating = $this->getCleverDialerRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
+            } else {
+                ($rating['score'] <= $proofedRating['score']) ?: $proofedRating = $rating;
             }
         }
         if ($rating = $this->getTelefonSpionRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
+            } else {
+                ($rating['score'] <= $proofedRating['score']) ?: $proofedRating = $rating;
             }
         }
         if ($rating = $this->getWerHatAngerufenRating($number)) {
             if ($this->proofRating($rating)) {
                 return $rating;
+            } else {
+                ($rating['score'] <= $proofedRating['score']) ?: $proofedRating = $rating;
             }
         }
         if ($rating = $this->getTellowsRating($number)) {
-            return $rating;
+            if ($this->proofRating($rating)) {
+                return $rating;
+            } else {
+                ($rating['score'] <= $proofedRating['score']) ?: $proofedRating = $rating;
+            }
         }
 
-        return false;
+        $result = (isset($proofedRating['score'])) ? $proofedRating : false;
+
+        return $result;
     }
 
     /**
