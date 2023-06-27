@@ -7,9 +7,9 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=always
 RestartSec=1
-WorkingDirectory=/home/[youruser]/fbcallrouter/ #enter our user
-ExecStart=/usr/bin/env php /home/[youruser]/fbcallrouter/fbcallrouter run #enter our user
-User=[youruser]   #enter your user!
+WorkingDirectory=/home/[youruser]/fbcallrouter/
+ExecStart=/usr/bin/env php /home/[youruser]/fbcallrouter/fbcallrouter run
+User=[youruser]
 
 [Install]
 WantedBy=multi-user.target

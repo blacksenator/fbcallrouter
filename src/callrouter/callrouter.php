@@ -42,6 +42,7 @@ class callrouter
         $contactConfig = [],
         $realName = '',
         $blockForeign,
+        $mSNs = [],
         $proofList = [],    // list of all telephone books to be checked against
         $blackList,                                 // index of spam phone book
         $newList,           // index of phone book for valid numbers (optional)
@@ -72,6 +73,7 @@ class callrouter
         $this->contactConfig = $config['contact'];
         $this->realName = $this->contactConfig['caller'];
         $this->blockForeign = $config['filter']['blockForeign'] ?? false;
+        $this->mSNs = $config['filter']['msn'] ?? [];
         $this->phoneTools = new phonetools($config['fritzbox']);
         $this->ownArea = $this->phoneTools->getOwnAreaCode();
         $this->setPhoneBooks($config['phonebook']);
@@ -281,6 +283,19 @@ class callrouter
     }
 
     /**
+     * returns true if MSN from call monitor stream is in the list of numbers to
+     * react on
+     */
+    public function isMSNtoProof (string $msn)
+    {
+        if (count($this->mSNs) && !in_array($msn, $this->mSNs)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * checking presumably foreign numbers
      *
      * @param string $number
@@ -449,24 +464,26 @@ class callrouter
      */
     public function runInboundValidation()
     {
-        $this->mailNotify = false;
-        $isSortedOut = true;
-        $number = $this->callMonitorValues['extern'];
-        $numberLength = strlen($number);
-        if ($numberLength == 0) {
-            $this->setLogging(99, ['Caller uses CLIR - no action possible']);
-        } elseif ($this->isNumberKnown($number) === false) {
-            $this->setContactEntry($this->blackList, $number);
-            $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
-            $isForeign = true ? substr($number, 0, 2) === '00' : false;
-            if ($isForeign) {                   // foreign number specific
-                $isSortedOut = $this->parseForeignNumber($number, $numberLength);
-            } else {                            // domestic numbers specific
-                $isSortedOut =  $this->parseDomesticNumber($number, $numberLength);
+        if ($this->isMSNtoProof($this->callMonitorValues['intern'])) {
+            $this->mailNotify = false;
+            $isSortedOut = true;
+            $number = $this->callMonitorValues['extern'];
+            $numberLength = strlen($number);
+            if ($numberLength == 0) {
+                $this->setLogging(99, ['Caller uses CLIR - no action possible']);
+            } elseif ($this->isNumberKnown($number) === false) {
+                $this->setContactEntry($this->blackList, $number);
+                $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
+                $isForeign = true ? substr($number, 0, 2) === '00' : false;
+                if ($isForeign) {                   // foreign number specific
+                    $isSortedOut = $this->parseForeignNumber($number, $numberLength);
+                } else {                            // domestic numbers specific
+                    $isSortedOut =  $this->parseDomesticNumber($number, $numberLength);
+                }
             }
-        }
-        if (!$isSortedOut) {
-            $this->webSearch($number, $isForeign);
+            if (!$isSortedOut) {
+                $this->webSearch($number, $isForeign);
+            }
         }
     }
 
@@ -477,16 +494,18 @@ class callrouter
      */
     public function runOutboundValidation()
     {
-        $number = $this->callMonitorValues['extern'];
-        $message = $this->setLogging(12, [$number]);
-        if ($this->isNumberKnown($number) === false) {
-            $this->mailNotify = false;
-            $this->mailText[] = $message;
-            $webResult = $this->checkDasOertliche($number);
-            if (isset($webResult['url'])) {
-                $this->setLogging(11, [$webResult['url']]);
-                $this->mailText[] = $webResult['deeplink'];
-                $this->mailNotify = true;
+        if ($this->isMSNtoProof($this->callMonitorValues['intern'])) {
+            $number = $this->callMonitorValues['extern'];
+            $message = $this->setLogging(12, [$number]);
+            if ($this->isNumberKnown($number) === false) {
+                $this->mailNotify = false;
+                $this->mailText[] = $message;
+                $webResult = $this->checkDasOertliche($number);
+                if (isset($webResult['url'])) {
+                    $this->setLogging(11, [$webResult['url']]);
+                    $this->mailText[] = $webResult['deeplink'];
+                    $this->mailNotify = true;
+                }
             }
         }
     }

@@ -15,9 +15,10 @@ $config = [
     'contact' => [
         'caller'    => 'autom. gesperrt',   // alias for the new unknown caller
         'timestamp' => true,    // adding timestamp to the caller: "[caller] ([timestamp])"
-        'type'      => 'other',     // type of phone line (home, work, mobil, fax etc.); 'other' = 'sonstige'
+        'type'      => 'other', // type of phone line (home, work, mobil, fax etc.); 'other' = 'sonstige'
     ],
     'filter' => [
+        'msn'          => [],   // MSNs to react on (['321765', '321766']; empty = all)
         'blockForeign' => true, // block unknown foreign numbers
         'score'        => 6,    // 5 = neutral, increase the value to be less sensitive (max. 9)
         'comments'     => 3,    // decrease the value to be less sensitive (min 3)
