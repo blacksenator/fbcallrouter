@@ -117,7 +117,7 @@ class callrouter
         $this->sortProofList();
         $this->phoneTools->checkListOfPhoneBooks($this->proofList);
         $refresh = $config['refresh'] ?? 1;
-        $this->elapse = $refresh < 1 ? self::ONEDAY : $refresh * self::ONEDAY;
+        $this->elapse = ($refresh < 1) ? self::ONEDAY : $refresh * self::ONEDAY;
     }
 
     /**
@@ -474,7 +474,7 @@ class callrouter
             } elseif ($this->isNumberKnown($number) === false) {
                 $this->setContactEntry($this->blackList, $number);
                 $this->mailText[] = $this->setLogging(2, [$number, $this->callMonitorValues['intern']]);
-                $isForeign = true ? substr($number, 0, 2) === '00' : false;
+                $isForeign = (substr($number, 0, 2) === '00') ? true : false;
                 if ($isForeign) {                   // foreign number specific
                     $isSortedOut = $this->parseForeignNumber($number, $numberLength);
                 } else {                            // domestic numbers specific

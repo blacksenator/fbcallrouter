@@ -43,7 +43,7 @@ class infomail
     public function sendMail(array $callMonitorValues, array $protocol)
     {
         $number = $callMonitorValues['extern'];
-        $way = 'from' ? $callMonitorValues['type'] == 'RING' : 'to';
+        $way = ($callMonitorValues['type'] == 'RING') ? 'from' : 'to';
         $body = nl2br('The following results and actions have been recorded:' . PHP_EOL . PHP_EOL);
         foreach ($protocol as $lines) {
             $body .= nl2br($lines . PHP_EOL);

@@ -58,8 +58,8 @@ class dialercheck
 
     public function __construct(array $filter)
     {
-        $this->score = $filter['score'] > 9 ? 9 : $filter['score'];
-        $this->comments = $filter['comments'] < 3 ? 3 : $filter['comments'];
+        $this->score = ($filter['score'] > 9) ? 9 : $filter['score'];
+        $this->comments = ($filter['comments'] < 3) ? 3 : $filter['comments'];
     }
 
     /**
