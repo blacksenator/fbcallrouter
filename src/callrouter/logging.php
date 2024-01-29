@@ -6,7 +6,7 @@ namespace blacksenator\callrouter;
  *
  * provides function to log call router actions
  *
- * @copyright (c) 2019 - 2023 Volker Püschel
+ * @copyright (c) 2019 - 2024 Volker Püschel
  * @license MIT
  */
 

@@ -34,6 +34,7 @@ $config = [
         'secure'   => 'tls',                                        // alternativ 'ssl'
         'user'     => '[USER]',                                     // your sender email adress e.g. account
         'password' => '[PASSWORD]',
+        'sender'   => '',                                           // OPTIONAL:your email adress who is sending this email
         'receiver' => 'blacksenator@github.com',                    // your email adress to receive the secured contacts
         'debug'    => 0,                                            // 0 = off (for production use)
                                                                     // 1 = client messages

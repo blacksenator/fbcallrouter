@@ -4,6 +4,8 @@
 
 The program is **trying to identify spam calls**. So it is listen to the [FRITZ!Box](#disclaimer) call monitor and does several wash cycles to figure out whether it is spam or not.
 
+**Please remember to update the [master data](#master-data) regularly so that the program works correctly!**
+
 ## Release notes
 
 If you already use an older version please refer to the [update section](#update) and be aware that the **structure of the configuration file differ** (see [`config.example.php`](/config.example.php)).
@@ -283,4 +285,7 @@ This script is released under MIT license.
 
 ## Author
 
-Copyright© 2019 - 2023 Volker Püschel
+Copyright© 2019 - 2024 Volker Püschel
+
+
+[def]: #master-data

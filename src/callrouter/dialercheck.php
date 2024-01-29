@@ -8,7 +8,7 @@ namespace blacksenator\callrouter;
  * dedicated to identify spammers. In the vast majority of cases, the query
  * takes place via screen scraping, since these websites do not offer no API
  *
- * @copyright (c) 2019 - 2023 Volker Püschel
+ * @copyright (c) 2019 - 2024 Volker Püschel
  * @license MIT
  */
 

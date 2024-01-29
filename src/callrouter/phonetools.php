@@ -12,7 +12,7 @@ namespace blacksenator\callrouter;
  * there are any changes. If so: download the ZIP-file and save the unpacked
  * file as "ONB.csv" in ./assets
  *
- * @copyright (c) 2019 - 2023 Volker Püschel
+ * @copyright (c) 2019 - 2024 Volker Püschel
  * @license MIT
  */
 

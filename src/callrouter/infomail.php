@@ -6,7 +6,7 @@ namespace blacksenator\callrouter;
  *
  * delivers simple e-mail function based on PHPMailer
  *
- * @copyright (c) 2022 - 2023 Volker Püschel
+ * @copyright (c) 2022 - 2024 Volker Püschel
  * @license MIT
  */
 
@@ -29,7 +29,8 @@ class infomail
         $this->mail->SMTPAuth   = true;                         // whether to use SMTP authentication
         $this->mail->Username   = $account['user'];             // username to use for SMTP authentication
         $this->mail->Password   = $account['password'];         // password to use for SMTP authentication
-        $this->mail->setFrom($account['user'], 'fbcallrouter'); // set who the message is to be sent fromly-to address
+        $sender = $account['sender'] ?? $account['user'];       // if optional sender adress is choosen
+        $this->mail->setFrom($sender, 'fbcallrouter');          // set who the message is to be sent fromly-to address
         $this->mail->addAddress($account['receiver']);          // set who the message is to be sent to
     }
 

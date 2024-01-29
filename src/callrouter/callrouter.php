@@ -21,7 +21,7 @@ use blacksenator\callrouter\infomail;
  * internationale Verbindungen zählen nicht zur Rufnummer."
  * @see https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Telekommunikation/Unternehmen_Institutionen/Nummerierung/Rufnummern/NP_Nummernraum.pdf?__blob=publicationFile&v=4
  *
- * @copyright (c) 2019 - 2023 Volker Püschel
+ * @copyright (c) 2019 - 2024 Volker Püschel
  * @license MIT
  */
 
