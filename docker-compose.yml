@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    volumes:
+      - type: bind
+        source: ./config.php
+        target: /app/config.php
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+    restart: always

@@ -1,0 +1,8 @@
+.idea
+.dockerignore
+.editorconfig
+.gitignore
+.php_cs.php
+.travis.yml
+config.php
+Dockerfile

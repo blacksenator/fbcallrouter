@@ -89,7 +89,11 @@ class logging
         date_default_timezone_set('Europe/Berlin');
         $message = date('d.m.Y H:i:s') . ' => ' . $info . PHP_EOL;
         if ($this->logging) {
-            file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+            if (getenv('DOCKER_CONTAINER')) {
+                echo($info . PHP_EOL);
+            } else {
+                file_put_contents($this->loggingPath . '/callrouter_logging.txt', $message, FILE_APPEND);
+            }
         }
 
         return $message;
