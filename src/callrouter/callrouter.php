@@ -495,7 +495,7 @@ class callrouter
     public function runOutboundValidation()
     {
         if ($this->isMSNtoProof($this->callMonitorValues['intern'])) {
-            $number = $this->callMonitorValues['extern'];
+            $number = str_replace('#', '', $this->callMonitorValues['extern']);
             $message = $this->setLogging(12, [$number]);
             if ($this->isNumberKnown($number) === false) {
                 $this->mailNotify = false;
